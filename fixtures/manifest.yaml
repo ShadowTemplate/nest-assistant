@@ -1,0 +1,67 @@
+# Manifest for the SYNTHETIC corpus.
+#
+# This file is the template for `data/manifest.yaml`, which TEAM 1 produces in
+# task W1-1.1 from the real Nest documents. Same shape, real content.
+#
+# The `tier` field is the most important line in this file. It is a policy
+# judgment wearing the costume of a data-entry task: it decides who is allowed to
+# see each document, and INGEST propagates it into every chunk. Get it wrong here
+# and no downstream code can save you.
+#
+# Everything under fixtures/ is INVENTED. No real prices, no real names, no real
+# rules. It exists so the pipeline has something to chew on before the real
+# corpus arrives, and so the public repository shows the world something
+# realistic without publishing anything of Nest's.
+
+documents:
+  - filename: prezzi-2026.md
+    title: Tariffe e condizioni 2026/2027
+    format: markdown
+    lang: it
+    tier: public
+    updated: 2026-05-14
+    owner: segreteria
+    answers: >
+      Costi mensili per tipologia di camera, cosa è incluso, caparra,
+      modalità di pagamento.
+
+  - filename: ammissioni.md
+    title: Criteri e procedura di ammissione
+    format: markdown
+    lang: it
+    tier: public
+    updated: 2026-04-02
+    owner: direzione
+    answers: >
+      Chi può fare domanda, scadenze, documenti richiesti, graduatoria.
+
+  - filename: regolamento-casa.md
+    title: Regolamento interno della residenza
+    format: markdown
+    lang: it
+    tier: resident
+    updated: 2026-09-01
+    owner: direzione
+    answers: >
+      Orari di silenzio, ospiti, spazi comuni, pulizie, sanzioni.
+
+  - filename: calendario-attivita.md
+    title: Attività e vita in residenza — autunno 2026
+    format: markdown
+    lang: it
+    tier: resident
+    updated: 2026-09-20
+    owner: staff attività
+    answers: >
+      Quali attività ci sono, quando, dove, come iscriversi.
+
+  - filename: procedure-segreteria.md
+    title: Procedure operative della segreteria
+    format: markdown
+    lang: it
+    tier: staff
+    updated: 2026-06-30
+    owner: segreteria
+    answers: >
+      Gestione morosità, cambio camera, danni, uscita anticipata.
+      Uso interno.

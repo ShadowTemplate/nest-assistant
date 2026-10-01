@@ -1,0 +1,125 @@
+"""Paths and settings. One place, so nobody hardcodes a path in six modules.
+
+Nothing here reads a secret at import time — secrets are read where they are
+used, so that the whole pipeline still imports and runs with no ``.env`` at all.
+"""
+
+from __future__ import annotations
+
+import os
+from pathlib import Path
+
+# ---------------------------------------------------------------------------
+# Paths
+# ---------------------------------------------------------------------------
+
+ROOT = Path(__file__).resolve().parents[2]
+"""Repository root."""
+
+DATA_DIR = Path(os.environ.get("NEST_DATA_DIR", ROOT / "data"))
+"""Real Nest documents. **Gitignored. Never committed.** See docs/DATA_POLICY.md."""
+
+FIXTURES_DIR = ROOT / "fixtures"
+"""Synthetic, invented, Nest-*like* documents. Committed on purpose: they are
+what the public repository shows the world, and they let every team work before
+the real corpus arrives."""
+
+BUILD_DIR = Path(os.environ.get("NEST_BUILD_DIR", ROOT / "build"))
+"""Generated artefacts: chunks.jsonl, the vector index, scorecards. Gitignored."""
+
+CHUNKS_PATH = BUILD_DIR / "chunks.jsonl"
+INDEX_DIR = BUILD_DIR / "index"
+EVAL_DIR = ROOT / "eval"
+PROMPTS_DIR = ROOT / "prompts"
+RESULTS_DIR = ROOT / "eval" / "results"
+
+# ---------------------------------------------------------------------------
+# Source selection
+# ---------------------------------------------------------------------------
+
+
+_NOT_CORPUS = {".gitkeep", "README.md"}
+"""The two files ``data/`` contains when it is empty of actual documents."""
+
+
+def corpus_dir() -> Path:
+    """Where documents are read from.
+
+    ``data/`` if it holds real documents, otherwise the synthetic ``fixtures/``.
+    This is why a student with no access to the real corpus can still do every
+    task on the list, and why nothing anyone writes should care which one it got.
+    """
+    if DATA_DIR.exists() and any(
+        p for p in DATA_DIR.rglob("*") if p.is_file() and p.name not in _NOT_CORPUS
+    ):
+        return DATA_DIR
+    return FIXTURES_DIR
+
+
+# ---------------------------------------------------------------------------
+# Models
+# ---------------------------------------------------------------------------
+
+ANSWER_MODEL = os.environ.get("NEST_ANSWER_MODEL", "claude-opus-5-5")
+"""The hosted model ANSWER generates with (pair 1).
+
+In October 2027 this line, and only this line, becomes a self-hosted model. If
+swapping it turns out to need changes anywhere else, an interface was dishonest.
+
+Cost knob: each team has a hard monthly spend limit. If a team burns through it,
+``NEST_ANSWER_MODEL=claude-sonnet-5-5`` (or ``claude-haiku-4-5``) in ``.env`` is
+cheaper — and measuring what that costs you in answer quality with `make eval`
+is a better afternoon than arguing about it.
+"""
+
+JUDGE_MODEL = os.environ.get("NEST_JUDGE_MODEL", "claude-sonnet-5-5")
+"""The model EVAL uses as a judge. Deliberately named separately from
+ANSWER_MODEL: a model grading its own homework is a known problem, and being
+able to point them at different models is how you check for it."""
+
+EMBEDDING_MODEL = os.environ.get(
+    "NEST_EMBEDDING_MODEL", "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
+)
+"""TEAM 2 — this is your decision, and it is a real one.
+
+The default here is multilingual and small enough to run on a laptop. It is a
+starting point, not a recommendation. Measure it against alternatives with
+`make eval` and write down what you found.
+"""
+
+DEFAULT_K = int(os.environ.get("NEST_K", "5"))
+DEFAULT_LANG = os.environ.get("NEST_LANG", "it")
+
+# ---------------------------------------------------------------------------
+# Secrets — read lazily, never logged
+# ---------------------------------------------------------------------------
+
+
+def anthropic_api_key() -> str | None:
+    return os.environ.get("ANTHROPIC_API_KEY") or None
+
+
+def telegram_bot_token() -> str | None:
+    return os.environ.get("TELEGRAM_BOT_TOKEN") or None
+
+
+def load_dotenv(path: Path | None = None) -> None:
+    """Minimal ``.env`` loader, so we do not add a dependency for six lines.
+
+    Existing environment variables win, which is what you want when a student
+    exports a key in their shell to test something.
+    """
+    path = path or (ROOT / ".env")
+    if not path.exists():
+        return
+    for line in path.read_text(encoding="utf-8").splitlines():
+        line = line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key, _, value = line.partition("=")
+        os.environ.setdefault(key.strip(), value.strip().strip('"').strip("'"))
+
+
+def ensure_build_dir() -> Path:
+    BUILD_DIR.mkdir(parents=True, exist_ok=True)
+    return BUILD_DIR

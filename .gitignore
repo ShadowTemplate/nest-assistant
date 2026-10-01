@@ -1,0 +1,62 @@
+# ---------------------------------------------------------------------------
+# Nest data. THE most important lines in this file.
+# The repository is public. Real Nest documents live in Drive or in data/,
+# and data/ never enters git. See docs/DATA_POLICY.md.
+# ---------------------------------------------------------------------------
+data/*
+!data/README.md
+!data/.gitkeep
+
+# Documents, wherever someone drops them
+*.pdf
+*.doc
+*.docx
+*.xls
+*.xlsx
+*.ppt
+*.pptx
+*.odt
+*.ods
+*.eml
+*.msg
+
+# Secrets
+.env
+.env.*
+!.env.example
+*.key
+*.pem
+*.p12
+*.pfx
+*.session
+*.session-journal
+.envrc
+credentials.json
+service-account*.json
+*secret*.json
+id_rsa*
+id_ed25519*
+
+# Generated artefacts
+build/
+chunks.jsonl
+*.faiss
+*.index
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+dist/
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Editors and OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

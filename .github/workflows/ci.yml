@@ -1,0 +1,69 @@
+# CI. TEAM 6 owns this (task W1-6.2).
+#
+# Three jobs, in the order they matter:
+#   data     — is there Nest data or a secret in this PR?   (never merge if red)
+#   check    — do the tests pass, and does the demo still run?
+#   lint     — is it formatted?
+#
+# The data job runs first and separately so that a leak is never buried under a
+# formatting failure.
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  data:
+    name: no Nest data, no secrets
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: scan the tree
+        run: python tools/scan_data.py --all
+      - name: gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  check:
+    name: tests and demo (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        # Someone in the room will have Windows, and someone will have a Mac.
+        # Finding out in CI is much cheaper than finding out at 10:35.
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+      - name: install (core only — CI must not need model weights)
+        run: uv sync
+      - name: tests
+        run: uv run pytest -q
+      - name: the demo still answers with no API key
+        run: uv run nest demo
+      - name: the eval still produces a scorecard
+        run: uv run nest eval || true   # a red tier-leak count is expected until W1-2.2 lands
+      - name: progress board
+        run: uv run nest board
+
+  lint:
+    name: lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - run: uv sync
+      - run: uv run ruff check .
+      - run: uv run ruff format --check .

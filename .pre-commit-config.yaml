@@ -1,0 +1,47 @@
+# Pre-commit hooks. TEAM 6 owns this (task W1-6.1).
+#
+# Install once per laptop:
+#
+#     make hooks
+#
+# After that, `git commit` runs these automatically. The point is to make the
+# safe path the easy path — nobody remembers a rule at 16:45 on a Saturday, but
+# everybody notices a blocked commit.
+
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-json
+      - id: check-toml
+      - id: check-merge-conflict
+      - id: detect-private-key
+      - id: check-added-large-files
+        args: [--maxkb=500]
+        # A big file in a repo this size is almost always a document someone
+        # meant to keep out.
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.9.6
+    hooks:
+      - id: ruff
+        args: [--fix]
+      - id: ruff-format
+
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.23.3
+    hooks:
+      - id: gitleaks
+
+  # Ours. The one that knows what Nest data looks like.
+  - repo: local
+    hooks:
+      - id: nest-data-scan
+        name: block Nest data and secrets
+        entry: python tools/scan_data.py
+        language: system
+        pass_filenames: true
+        always_run: false

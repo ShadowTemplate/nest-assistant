@@ -1,0 +1,145 @@
+# The evaluation set. TEAM 5 owns this file (task W1-5.1).
+#
+# What is here now is a SEED — twelve questions written against the synthetic
+# fixtures, so that `make eval` produces a number on a freshly cloned repo. It is
+# not the real set. The real set is 60–100 questions that real people actually
+# ask, and building it is the most valuable thing anyone does on the day.
+#
+# Fields
+#   id                stable, referenced in scorecards over time
+#   question          exactly as a person would type it, typos and all
+#   tier              who is asking: public | resident | staff
+#   expect            "answer" or "refusal"
+#   expected_sources  filenames a human would have cited
+#   expected_answer   the key fact the answer must contain
+#   source            where this question came from — staff | resident | document
+#   notes             anything a future reader needs to know
+#
+# `source` is not paperwork. A set written by residents over-represents what
+# residents care about and under-represents what worried parents ask. Recording
+# the provenance is what lets eval/README.md say so honestly.
+
+- id: q001
+  question: "Quanto costa una camera singola?"
+  tier: public
+  expect: answer
+  expected_sources: [prezzi-2026.md]
+  expected_answer: "480"
+  source: document
+
+- id: q002
+  question: "La doppia quanto viene a persona?"
+  tier: public
+  expect: answer
+  expected_sources: [prezzi-2026.md]
+  expected_answer: "360"
+  source: document
+
+- id: q003
+  question: "Nel prezzo sono incluse le utenze?"
+  tier: public
+  expect: answer
+  expected_sources: [prezzi-2026.md]
+  expected_answer: "utenze"
+  source: document
+  notes: "Domanda tipica di un genitore, non di uno studente."
+
+- id: q004
+  question: "Quanto è la caparra e quando me la restituite?"
+  tier: public
+  expect: answer
+  expected_sources: [prezzi-2026.md]
+  expected_answer: "due mensilità"
+  source: document
+  notes: "Sbagliare questa risposta costa più che non darla. Vedi W1-3.2."
+
+- id: q005
+  question: "Entro quando devo presentare la domanda di ammissione?"
+  tier: public
+  expect: answer
+  expected_sources: [ammissioni.md]
+  expected_answer: "30 aprile"
+  source: document
+
+- id: q006
+  question: "Quali documenti servono per fare domanda?"
+  tier: public
+  expect: answer
+  expected_sources: [ammissioni.md]
+  expected_answer: "iscrizione"
+  source: document
+
+- id: q007
+  question: "A che ora è il silenzio la sera?"
+  tier: resident
+  expect: answer
+  expected_sources: [regolamento-casa.md]
+  expected_answer: "23:00"
+  source: document
+
+- id: q008
+  question: "Posso far dormire un amico in camera?"
+  tier: resident
+  expect: answer
+  expected_sources: [regolamento-casa.md]
+  expected_answer: "tre notti"
+  source: document
+
+- id: q009
+  question: "Fino a che ora è aperta la palestra?"
+  tier: resident
+  expect: answer
+  expected_sources: [regolamento-casa.md]
+  expected_answer: "23:00"
+  source: document
+
+- id: q010
+  question: "Quando si fa la cena comunitaria?"
+  tier: resident
+  expect: answer
+  expected_sources: [calendario-attivita.md]
+  expected_answer: "mercoledì"
+  source: document
+
+# --- Questions the corpus cannot answer. These must be REFUSED. -------------
+# A system that answers these is worse than one that answers nothing: it has
+# learned to sound confident about things it does not know.
+
+- id: q011
+  question: "C'è un parcheggio per la macchina?"
+  tier: resident
+  expect: refusal
+  expected_sources: []
+  source: document
+  notes: "Il corpus non dice nulla sui parcheggi. Deve rifiutare."
+
+- id: q012
+  question: "Quanto costerà la singola nel 2028?"
+  tier: public
+  expect: refusal
+  expected_sources: []
+  source: document
+  notes: "Nessuno lo sa. Nemmeno il modello. Soprattutto il modello."
+
+# --- Tier boundary. Same question, two askers, two correct answers. ---------
+# The public version must refuse: the answer lives in a staff-only document.
+
+- id: q013
+  question: "Cosa succede se non pago l'affitto per due mesi?"
+  tier: public
+  expect: refusal
+  expected_sources: []
+  source: document
+  notes: >
+    La risposta esiste in procedure-segreteria.md, che è staff-only. Un utente
+    public non deve vederla. Se questa domanda riceve una risposta, c'è una fuga
+    di livello — e il conteggio tier_leaks deve accorgersene.
+
+- id: q014
+  question: "Cosa succede se un residente non paga per due mesi?"
+  tier: staff
+  expect: answer
+  expected_sources: [procedure-segreteria.md]
+  expected_answer: "cinque giorni"
+  source: document
+  notes: "Stessa domanda di q013, da chi ha diritto di saperlo."

@@ -1,0 +1,64 @@
+[project]
+name = "nest-assistant"
+version = "0.1.0"
+description = "AI assistant for the Nest student residence in Trento. Built by students, one workshop at a time."
+readme = "README.md"
+requires-python = ">=3.12"
+license = { text = "MIT" }
+
+# Core dependencies. Kept deliberately small so that `make setup-lite` finishes
+# in under a minute on bad wifi and the stub pipeline runs with nothing else.
+dependencies = [
+    "pyyaml>=6.0",
+]
+
+[project.optional-dependencies]
+# TEAM 1 (INGEST) — reading PDF and Word documents.
+ingest = [
+    "pypdf>=5.0",
+    "python-docx>=1.1",
+]
+# TEAM 2 (INDEX) — embeddings and vector search.
+# No FAISS on purpose: a few thousand chunks fit comfortably in a NumPy matrix,
+# and NumPy installs cleanly on every laptop in the room.
+index = [
+    "sentence-transformers>=3.0",
+    "numpy>=1.26",
+    "rank-bm25>=0.2.2",
+]
+# TEAM 3 (ANSWER) — the hosted model. Pair 2 replaces this, not the interface.
+llm = [
+    "anthropic>=0.40",
+]
+# TEAM 4 (CHAT) — Telegram.
+bot = [
+    "python-telegram-bot>=21.0",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.0",
+    "ruff>=0.6",
+    "pre-commit>=3.8",
+]
+
+[project.scripts]
+nest = "nest_assistant.cli:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/nest_assistant"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
