@@ -45,7 +45,7 @@ from typing import Any
 
 import yaml
 
-from ..config import EVAL_DIR, RESULTS_DIR
+from ..config import DATA_DIR, EVAL_DIR, RESULTS_DIR, corpus_dir
 from ..schema import PipelineProtocol, Scorecard, tier_allows
 
 OWNER = "TEAM 5 — EVAL"
@@ -56,7 +56,7 @@ QUESTIONS_PATH = EVAL_DIR / "questions.yaml"
 REDTEAM_PATH = EVAL_DIR / "redteam.yaml"
 
 
-def load_questions(path: Path | None = None) -> list[dict[str, Any]]:
+def load_questions(path: Path | None = None, corpus: str | None = None) -> list[dict[str, Any]]:
     """Read ``eval/questions.yaml``.
 
     Each entry::
@@ -67,8 +67,13 @@ def load_questions(path: Path | None = None) -> list[dict[str, Any]]:
         expect: answer                # "answer" or "refusal"
         expected_sources: [prezzi-2026.md]
         expected_answer: "10.450"     # or the key facts it must contain
+        corpus: data                  # optional: only valid on data/ or fixtures/
         source: document              # where the question came from — see below
         notes: "..."
+
+    Questions tagged with a ``corpus`` that is not the one in use are skipped,
+    so the same file scores honestly on a fresh clone (fixtures/) and on the
+    real documents (data/). Pass ``corpus="all"`` to get every question.
 
     ``source`` is not bureaucracy. A question set written by residents
     over-represents what residents care about. Recording where each question
@@ -78,7 +83,12 @@ def load_questions(path: Path | None = None) -> list[dict[str, Any]]:
     if not path.exists():
         return []
     raw = yaml.safe_load(path.read_text(encoding="utf-8")) or []
-    return list(raw) if isinstance(raw, list) else list(raw.get("questions", []))
+    items = list(raw) if isinstance(raw, list) else list(raw.get("questions", []))
+    if corpus is None:
+        corpus = "data" if corpus_dir() == DATA_DIR else "fixtures"
+    if corpus == "all":
+        return items
+    return [q for q in items if q.get("corpus", corpus) == corpus]
 
 
 # ---------------------------------------------------------------------------
