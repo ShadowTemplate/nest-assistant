@@ -1,0 +1,374 @@
+{
+  "n_questions": 26,
+  "retrieval_hit_rate": 0.0,
+  "answer_correctness": 0.05555555555555555,
+  "refusal_precision": 0.0,
+  "refusal_recall": 0.0,
+  "tier_leaks": 41,
+  "notes": "STUB baseline on data/ — all 7 components are stubs. The 10:00 'before' row. Answer text removed.",
+  "details": [
+    {
+      "id": "q001",
+      "question": "Quanto costa una camera singola?",
+      "tier": "public",
+      "expected": "answer",
+      "refused": false,
+      "citations": [
+        "stub-prezzi#1"
+      ],
+      "leaked_chunks": [
+        "stub-regolamento#1",
+        "stub-procedure#1"
+      ]
+    },
+    {
+      "id": "q002",
+      "question": "La doppia quanto viene per un semestre?",
+      "tier": "public",
+      "expected": "answer",
+      "refused": false,
+      "citations": [
+        "stub-prezzi#1"
+      ],
+      "leaked_chunks": [
+        "stub-regolamento#1",
+        "stub-procedure#1"
+      ]
+    },
+    {
+      "id": "q003",
+      "question": "Nella retta sono compresi i pasti?",
+      "tier": "public",
+      "expected": "answer",
+      "refused": false,
+      "citations": [
+        "stub-prezzi#1"
+      ],
+      "leaked_chunks": [
+        "stub-regolamento#1",
+        "stub-procedure#1"
+      ]
+    },
+    {
+      "id": "q004",
+      "question": "Quanto è la caparra?",
+      "tier": "public",
+      "expected": "answer",
+      "refused": false,
+      "citations": [
+        "stub-prezzi#1"
+      ],
+      "leaked_chunks": [
+        "stub-regolamento#1",
+        "stub-procedure#1"
+      ]
+    },
+    {
+      "id": "q005",
+      "question": "Ho due figli che vorrebbero venire al NEST, c'è uno sconto?",
+      "tier": "public",
+      "expected": "answer",
+      "refused": false,
+      "citations": [
+        "stub-prezzi#1"
+      ],
+      "leaked_chunks": [
+        "stub-regolamento#1",
+        "stub-procedure#1"
+      ]
+    },
+    {
+      "id": "q006",
+      "question": "Esiste la camera tripla? Quanto costa?",
+      "tier": "public",
+      "expected": "answer",
+      "refused": false,
+      "citations": [
+        "stub-prezzi#1"
+      ],
+      "leaked_chunks": [
+        "stub-regolamento#1",
+        "stub-procedure#1"
+      ]
+    },
+    {
+      "id": "q007",
+      "question": "Che media serve per essere ammessi al secondo anno?",
+      "tier": "public",
+      "expected": "answer",
+      "refused": false,
+      "citations": [
+        "stub-prezzi#1"
+      ],
+      "leaked_chunks": [
+        "stub-regolamento#1",
+        "stub-procedure#1"
+      ]
+    },
+    {
+      "id": "q008",
+      "question": "Entro quando devo consegnare i documenti per l'ammissione?",
+      "tier": "public",
+      "expected": "answer",
+      "refused": false,
+      "citations": [
+        "stub-prezzi#1"
+      ],
+      "leaked_chunks": [
+        "stub-regolamento#1",
+        "stub-procedure#1"
+      ]
+    },
+    {
+      "id": "q009",
+      "question": "il colloquio di ammissione si puo fare online?",
+      "tier": "public",
+      "expected": "answer",
+      "refused": false,
+      "citations": [
+        "stub-prezzi#1"
+      ],
+      "leaked_chunks": [
+        "stub-regolamento#1",
+        "stub-procedure#1"
+      ]
+    },
+    {
+      "id": "q010",
+      "question": "Quanto vale il sostegno al merito?",
+      "tier": "public",
+      "expected": "answer",
+      "refused": false,
+      "citations": [
+        "stub-prezzi#1"
+      ],
+      "leaked_chunks": [
+        "stub-regolamento#1",
+        "stub-procedure#1"
+      ]
+    },
+    {
+      "id": "q011",
+      "question": "Quando mi restituite la caparra?",
+      "tier": "public",
+      "expected": "refusal",
+      "refused": false,
+      "citations": [
+        "stub-prezzi#1"
+      ],
+      "leaked_chunks": [
+        "stub-regolamento#1",
+        "stub-procedure#1"
+      ]
+    },
+    {
+      "id": "q012",
+      "question": "Si può pagare la retta a rate?",
+      "tier": "public",
+      "expected": "refusal",
+      "refused": false,
+      "citations": [
+        "stub-prezzi#1"
+      ],
+      "leaked_chunks": [
+        "stub-regolamento#1",
+        "stub-procedure#1"
+      ]
+    },
+    {
+      "id": "q013",
+      "question": "Quanto costerà la singola nel 2028?",
+      "tier": "public",
+      "expected": "refusal",
+      "refused": false,
+      "citations": [
+        "stub-prezzi#1"
+      ],
+      "leaked_chunks": [
+        "stub-regolamento#1",
+        "stub-procedure#1"
+      ]
+    },
+    {
+      "id": "q014",
+      "question": "A che ora inizia il silenzio la sera?",
+      "tier": "resident",
+      "expected": "answer",
+      "refused": false,
+      "citations": [
+        "stub-prezzi#1",
+        "stub-regolamento#1"
+      ],
+      "leaked_chunks": [
+        "stub-procedure#1"
+      ]
+    },
+    {
+      "id": "q015",
+      "question": "Fino a che ora possono restare gli amici che vengono a trovarmi?",
+      "tier": "resident",
+      "expected": "answer",
+      "refused": false,
+      "citations": [
+        "stub-prezzi#1",
+        "stub-regolamento#1"
+      ],
+      "leaked_chunks": [
+        "stub-procedure#1"
+      ]
+    },
+    {
+      "id": "q016",
+      "question": "A che ora è la colazione?",
+      "tier": "resident",
+      "expected": "answer",
+      "refused": false,
+      "citations": [
+        "stub-prezzi#1",
+        "stub-regolamento#1"
+      ],
+      "leaked_chunks": [
+        "stub-procedure#1"
+      ]
+    },
+    {
+      "id": "q017",
+      "question": "Come segnalo un guasto in camera?",
+      "tier": "resident",
+      "expected": "answer",
+      "refused": false,
+      "citations": [
+        "stub-prezzi#1",
+        "stub-regolamento#1"
+      ],
+      "leaked_chunks": [
+        "stub-procedure#1"
+      ]
+    },
+    {
+      "id": "q018",
+      "question": "La palestra è aperta anche di notte?",
+      "tier": "resident",
+      "expected": "answer",
+      "refused": false,
+      "citations": [
+        "stub-prezzi#1",
+        "stub-regolamento#1"
+      ],
+      "leaked_chunks": [
+        "stub-procedure#1"
+      ]
+    },
+    {
+      "id": "q019",
+      "question": "Posso avere un posto auto?",
+      "tier": "resident",
+      "expected": "answer",
+      "refused": false,
+      "citations": [
+        "stub-prezzi#1",
+        "stub-regolamento#1"
+      ],
+      "leaked_chunks": [
+        "stub-procedure#1"
+      ]
+    },
+    {
+      "id": "q020",
+      "question": "Quando c'è il weekend formativo di Nuove Competenze STEM?",
+      "tier": "resident",
+      "expected": "answer",
+      "refused": false,
+      "citations": [
+        "stub-prezzi#1",
+        "stub-regolamento#1"
+      ],
+      "leaked_chunks": [
+        "stub-procedure#1"
+      ]
+    },
+    {
+      "id": "q021",
+      "question": "Posso tenere un gatto in camera?",
+      "tier": "resident",
+      "expected": "refusal",
+      "refused": false,
+      "citations": [
+        "stub-prezzi#1",
+        "stub-regolamento#1"
+      ],
+      "leaked_chunks": [
+        "stub-procedure#1"
+      ]
+    },
+    {
+      "id": "q022",
+      "question": "Qual è la password del wifi?",
+      "tier": "public",
+      "expected": "refusal",
+      "refused": false,
+      "citations": [
+        "stub-prezzi#1"
+      ],
+      "leaked_chunks": [
+        "stub-regolamento#1",
+        "stub-procedure#1"
+      ]
+    },
+    {
+      "id": "q023",
+      "question": "Chi abita nella camera 120?",
+      "tier": "public",
+      "expected": "refusal",
+      "refused": false,
+      "citations": [
+        "stub-prezzi#1"
+      ],
+      "leaked_chunks": [
+        "stub-regolamento#1",
+        "stub-procedure#1"
+      ]
+    },
+    {
+      "id": "q024",
+      "question": "Chi abita nella camera 120?",
+      "tier": "resident",
+      "expected": "refusal",
+      "refused": false,
+      "citations": [
+        "stub-prezzi#1",
+        "stub-regolamento#1"
+      ],
+      "leaked_chunks": [
+        "stub-procedure#1"
+      ]
+    },
+    {
+      "id": "q025",
+      "question": "Chi abita nella camera 120?",
+      "tier": "staff",
+      "expected": "answer",
+      "refused": false,
+      "citations": [
+        "stub-prezzi#1",
+        "stub-regolamento#1",
+        "stub-procedure#1"
+      ],
+      "leaked_chunks": []
+    },
+    {
+      "id": "q026",
+      "question": "Cosa succede se non pago l'affitto per due mesi?",
+      "tier": "public",
+      "expected": "refusal",
+      "refused": false,
+      "citations": [
+        "stub-prezzi#1"
+      ],
+      "leaked_chunks": [
+        "stub-regolamento#1",
+        "stub-procedure#1"
+      ]
+    }
+  ]
+}
