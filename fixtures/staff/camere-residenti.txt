@@ -1,0 +1,153 @@
+# SYNTHETIC DATA — invented names, not real Nest residents.
+# Format: room number, then the residents of that room separated by "; ".
+
+101: Alberto De Angelis
+102: Camilla Gentile; Asia Tomasi
+103: Giulia Rinaldi
+104: Elisa Bertolini
+105: Martina Conti; Viola Orlando
+106: Elia Pisoni; Oliver Brown
+107: Caterina Neri
+108: Paolo Serra
+109: Leonardo Monti
+110: Daniel Novak
+111: Hanna Nowak
+112: Asia Conti; Lucia Rizzi
+113: Matteo Gottardi
+114: Pablo Romero; Alessandro Endrizzi
+115: Arianna Valentini
+116: Diego Gallo
+117: Michele Moretti
+118: Francesca Moser
+119: Giorgio Mancini
+120: Fabio Leone; Fabio Ferrara; Cristian Messina
+121: Edoardo Ferraro; Giacomo Serra
+122: Giacomo Marini; Andrea Orlando
+123: Amira Saleh; Greta Pellegrini
+124: Stefano Pellegrini; Pietro Rinaldi
+125: Matilde De Santis
+126: Diego Rinaldi
+127: Francesco Monti
+128: Eleonora Cattaneo
+129: Michele Villa; Cristian Barbieri
+130: Irene D'Angelo
+201: Luca Leone; Mattia Marchetti
+202: Alice Vitale
+203: Samuele Moser
+204: Léa Dubois; Chiara Santoro
+205: Sofia Pisoni; Benedetta Rossi
+206: Tommaso Testa; Giulio Pisoni
+207: Veronica Mariani
+208: Marco Coppola; Filippo Pellegrini
+209: Alessandro Costa; Luca Greco
+210: Sofia Lombardi
+211: Stefano Fiorentini
+212: Eleonora Morelli; Yuki Tanaka
+213: Giulio Vitale; Tommaso Lombardi
+214: Cristian Galli
+215: Andrea Rizzo
+216: Paolo Fabbri; Riccardo Neri; Pietro Dallapiccola
+217: Samuele De Santis
+218: Laura D'Angelo
+219: Marta Ferri
+220: Luca Morelli
+221: Riccardo D'Angelo
+222: Arianna De Angelis
+223: Anna Gottardi; Agnese Fiorentini
+224: Diego Costa
+225: Agnese Bianchi; Laura Palumbo
+226: Andrea Gatti; Leonardo Bruno
+227: Edoardo Ferri
+228: Giacomo Fontana
+229: Agnese Moretti
+230: Benedetta Conti
+301: Cristian D'Angelo
+302: Filippo Marchetti
+303: Elena Grasso
+304: Margherita Marchetti; Elif Yılmaz
+305: Alice Ferrari; Nadia Haddad
+306: Gabriele Gatti; Edoardo Pisoni
+307: Gabriele Esposito; Alberto Moretti
+308: Asia Mariani
+309: Federico Gatti
+310: Giorgia Rizzo
+311: Lucia Martini
+312: Ilaria Valentini
+313: Nicole Cattaneo; Ilaria Lombardi
+314: Fabio Barbieri
+315: Francesco Bianchi
+316: Benedetta Ricci
+317: Aurora Lombardo
+318: Arianna Orlando; Ines Moreau
+319: Paolo Galli
+320: Ettore Messina
+321: Viola Fabbri
+322: Giulia Bertolini; Matilde Longo
+323: Francesca Giordano
+324: Serena Bertolini
+325: Federica Mariani
+326: Leonardo Esposito
+327: Paolo Gatti; Giulio Bruno
+328: Federico Farina
+329: Sofia Orlando
+330: Marco Gatti; Lorenzo Ferri
+401: Veronica Monti
+402: Alberto Mariani; Riccardo Leone
+403: Ilaria Rizzi; Sara Ferri
+404: Tommaso Conti; Francesco Bruno
+405: Martina Fabbri
+406: Caterina Cattaneo; Eleonora Pellegrini
+407: Diego Rizzo; Edoardo Martinelli
+408: Arianna Benedetti
+409: Sara Bianchi
+410: Federica Zanoni
+411: Pietro Conte
+412: Marco Martini
+413: Silvia Rossi; Giorgia Zanetti
+414: Bianca De Santis
+415: Valentina Colombo
+416: Gaia Serra
+417: Giorgio Cattaneo; Luca Gallo
+418: Benedetta Dallapiccola
+419: Tommaso Orlando; Tommaso Cattaneo
+420: Alberto Marino
+421: Aurora Bruno; Nicole Pedrotti
+422: Giulia Ferrara
+423: Greta Ricci; Greta Tomasi
+424: Laura Rizzi; Marta Fiorentini
+425: Alessandro Palumbo
+426: Tomás Silva
+427: Rebecca Giordano; Noemi Barbieri
+428: Simone Mancini; Simone Pisoni
+429: Daniele Conti; Ettore Coppola
+430: Michele Mariani
+501: Agnese Valentini
+502: Anna Parisi; Giulia Morelli
+503: Jacopo Tomasi
+504: Anna Galli
+505: Giorgio Rossi
+506: Emanuele Benedetti; Jacopo Santoro
+507: Giorgio Conte
+508: Emanuele D'Angelo
+509: Paolo Marini
+510: Mateo García
+511: Daniele Bruno
+512: Elena Neri
+513: Davide Ricci; Lucas Martin
+514: Emma Neri; Alessia Pellegrini
+515: Michele Gentile
+516: Jacopo Mariani; Matteo Greco
+517: Arjun Mehta
+518: Leonardo Fontana; Jonas Becker
+519: Giorgio Bianchi; Stefano Martinelli
+520: Irene Colombo
+521: Stefano Bertolini
+522: Mattia Bianco
+523: Valentina Sanna
+524: Gabriele Colombo
+525: Elisa Ricci; Ilaria Serra
+526: Valerio Galli
+527: Giulia Cattaneo
+528: Edoardo Silvestri
+529: Margherita Mancini
+530: Ilaria Moser
