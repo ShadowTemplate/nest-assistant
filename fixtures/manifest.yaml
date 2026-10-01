@@ -65,14 +65,3 @@ documents:
     answers: >
       Gestione morosità, cambio camera, danni, uscita anticipata.
       Uso interno.
-
-  - filename: camere-residenti.txt
-    title: Assegnazione camere — residenti 2026/2027
-    format: text
-    lang: it
-    tier: staff
-    updated: 2026-10-01
-    owner: segreteria
-    answers: >
-      Chi abita in quale camera. Una riga per camera: numero, poi i residenti
-      separati da "; ". Dati personali: uso interno, solo staff.
