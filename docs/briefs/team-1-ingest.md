@@ -37,6 +37,17 @@ contents, and it tells EVAL what should fail.
 > mess feels like you are doing it wrong — you are not. The mess *is* the
 > finding, and it goes in `INVENTORY.md`.
 
+> **Two tiers are already decided. Do not relitigate them.**
+>
+> | Document | Tier | Why |
+> |---|---|---|
+> | `SALVASTUDENTE_COLLEGE_26.pdf`, `STUDENTSAVER_COLLEGE_26.pdf` (the residents' guide, IT and EN) | **resident** | Contains the residence **wifi password** and staff email addresses. Marked `public`, the bot would hand the password to anyone who asks. |
+> | `camere-residenti.txt` (room list — synthetic) | **staff** | Who lives in which room is personal data. Not even residents see it. |
+>
+> Every other document is yours to argue about. Read the residents' guide before
+> you decide anything else: it is the clearest example in the corpus of a
+> document that *looks* harmless and is not.
+
 ## B · Ingestion pipeline — make it real
 
 **Produce** a working `build_chunks()`; a generated `build/chunks.jsonl`
