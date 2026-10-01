@@ -1,46 +1,63 @@
-<!-- SYNTHETIC — invented for the workshop. Not real Nest prices. tier: public -->
+<!-- PUBLIC — summary of NEST College's published 2026/2027 information (Bando di
+ammissione, international brochure). Real values, rewritten text. tier: public -->
 
-# Tariffe e condizioni — anno accademico 2026/2027
+# Rette e condizioni — anno accademico 2026/2027
 
-## Camere e tariffe mensili
+NEST College, Trento. 91 camere singole, 49 doppie e 2
+triple, tutte con bagno privato.
 
-| Tipologia | Tariffa mensile | Note |
-|---|---|---|
-| Camera singola standard | 480 € | Bagno privato |
-| Camera singola grande | 540 € | Bagno privato, scrivania doppia |
-| Camera doppia | 360 € a persona | Bagno condiviso fra due |
-| Monolocale | 620 € | Angolo cottura privato |
+## Retta annuale (1 settembre – 31 luglio)
 
-Le tariffe si intendono a persona e comprendono:
+| Camera | Retta annuale |
+|---|---|
+| Singola | 10.450 € |
+| Doppia | 8.250 € |
+| Tripla (offerta limitata) | 7.150 € |
 
-- utenze (acqua, luce, riscaldamento)
-- connessione internet via cavo e wifi
-- pulizia settimanale degli spazi comuni
-- accesso alla sala studio, alla palestra e alla lavanderia
+## Retta semestrale
 
-Non sono comprese la pulizia della camera, la biancheria e i pasti.
+Due semestri: dal 1 settembre al 10 febbraio, oppure dal 15 febbraio al 31 luglio.
 
-## Durata del contratto
+| Camera | Retta semestrale |
+|---|---|
+| Singola | 5.700 € |
+| Doppia | 4.500 € |
+| Tripla (offerta limitata) | 3.900 € |
 
-Il contratto standard va dal 1 settembre al 31 luglio (11 mensilità). È
-possibile richiedere un contratto breve di 5 mesi, con una maggiorazione del
-10% sulla tariffa mensile.
+## Cosa è incluso nella retta
+
+- **Utenze** e connessione wifi
+- **Pasti:** colazione e cena dal lunedì al venerdì (servizio RistoNEST)
+- **Servizi residenziali:** reperibilità e presidio 24 ore su 24, manutenzione
+  ordinaria, aria condizionata, accesso 24 ore su 24 a palestra, sala musica e
+  lavanderia, parcheggio
+- **Percorso formativo** NEST College (weekend formativi, laboratori, colloqui con
+  il tutor)
 
 ## Caparra
 
-Alla firma del contratto è richiesta una **caparra pari a due mensilità**. La
-caparra viene restituita entro 60 giorni dalla riconsegna della camera, al netto
-di eventuali danni rilevati durante il sopralluogo di uscita.
+Alla firma del contratto è richiesta una caparra di **1.500 €**.
 
-## Pagamenti
+## Riduzioni e sostegni
 
-Il canone si paga entro il **giorno 5 di ogni mese**, tramite bonifico bancario
-sul conto intestato alla residenza. I dati bancari vengono comunicati alla firma
-del contratto.
+- **Fratelli e sorelle:** per le famiglie che iscrivono almeno due figli nello
+  stesso anno accademico, dal secondo figlio è previsto uno sconto pari alla
+  quota alloggio di una mensilità.
+- **Sostegni al merito NEST:** 18 sostegni da 1.500 €, più 750 € in caso di
+  conferma per l'anno successivo (2.250 € in totale, pari a tre mensilità in
+  camera doppia). Valgono per camera singola o doppia e riducono la quota servizi
+  College, non l'alloggio. **Per il 2026/2027 il concorso è già chiuso.**
 
-## Riduzioni
+## Casi particolari
 
-- **Fratelli o sorelle in residenza:** 5% di riduzione per ciascuno.
-- **Rinnovo per il secondo anno:** 3% di riduzione.
+- **Mobilità internazionale o tirocinio fuori sede:** per un semestre fuori si
+  paga la retta semestrale; per un anno intero fuori la retta è sospesa al 100%.
+  I colloqui con il tutor continuano online.
+- **Laurea entro marzo:** chi si laurea entro il marzo successivo può chiedere un
+  contratto semestrale; se la Direzione approva, la retta dell'anno è ridotta del
+  50%.
+- **Soggiorni brevi:** non sono gestiti dal College. Contattare l'Ostello di Trento.
 
-Le riduzioni non sono cumulabili oltre il 5% complessivo.
+## Informazioni
+
+Segreteria NEST College: 0461 959507.

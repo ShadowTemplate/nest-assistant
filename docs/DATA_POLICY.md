@@ -43,13 +43,13 @@ empty values, and that is the only one that gets committed.
 | Generated chunks | `build/chunks.jsonl` | **No** |
 | Telegram allowlist | `data/allowlist.json` | **No** |
 | Keys and tokens | `.env` | **No** |
-| Synthetic Nest-*like* documents | `fixtures/` | Yes — they are invented |
+| Nest-*like* documents | `fixtures/` | Yes — public tier summarises what Nest already publishes; resident and staff tier are invented |
 | Eval questions and scorecards | `eval/` | Yes — questions and numbers, not documents |
 | Code, prompts, docs | everywhere else | Yes |
 
 Note that `eval/questions.yaml` is committed. Questions are fine; *answers copied
 out of a Nest document* are not. Write the expected answer as the key fact
-("480", "due mensilità"), never as a quoted paragraph.
+("10.450", "1.500 €"), never as a quoted paragraph.
 
 ## What enforces this
 

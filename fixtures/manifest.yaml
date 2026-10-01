@@ -8,32 +8,35 @@
 # see each document, and INGEST propagates it into every chunk. Get it wrong here
 # and no downstream code can save you.
 #
-# Everything under fixtures/ is INVENTED. No real prices, no real names, no real
-# rules. It exists so the pipeline has something to chew on before the real
-# corpus arrives, and so the public repository shows the world something
-# realistic without publishing anything of Nest's.
+# The two PUBLIC fixtures (prezzi-2026.md, ammissioni.md) summarise information
+# Nest already publishes — the Bando and the brochures — in our own words, with
+# the real values, so the same eval questions work on fixtures/ and on data/.
+# Everything at resident and staff tier is INVENTED: no real names, no real
+# rules, no real procedures. The repository never holds anything of Nest's that
+# Nest has not already made public.
 
 documents:
   - filename: prezzi-2026.md
-    title: Tariffe e condizioni 2026/2027
+    title: Rette e condizioni 2026/2027
     format: markdown
     lang: it
     tier: public
-    updated: 2026-05-14
+    updated: 2026-06-27
     owner: segreteria
     answers: >
-      Costi mensili per tipologia di camera, cosa è incluso, caparra,
-      modalità di pagamento.
+      Retta annuale e semestrale per tipo di camera, cosa è incluso, caparra,
+      riduzioni, sostegni al merito, mobilità e laureandi.
 
   - filename: ammissioni.md
-    title: Criteri e procedura di ammissione
+    title: Requisiti e procedura di ammissione
     format: markdown
     lang: it
     tier: public
-    updated: 2026-04-02
+    updated: 2026-06-27
     owner: direzione
     answers: >
-      Chi può fare domanda, scadenze, documenti richiesti, graduatoria.
+      Requisiti di merito, iter di ammissione, colloquio, documenti e
+      scadenze, obiettivi per la conferma, studenti internazionali.
 
   - filename: regolamento-casa.md
     title: Regolamento interno della residenza

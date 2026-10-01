@@ -66,7 +66,7 @@ def load_questions(path: Path | None = None) -> list[dict[str, Any]]:
         tier: public                  # who is asking
         expect: answer                # "answer" or "refusal"
         expected_sources: [prezzi-2026.md]
-        expected_answer: "480 euro"   # or the key facts it must contain
+        expected_answer: "10.450"     # or the key facts it must contain
         source: document              # where the question came from — see below
         notes: "..."
 

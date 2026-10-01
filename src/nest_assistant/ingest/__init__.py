@@ -72,9 +72,9 @@ def build_chunks(src: Path | None = None) -> list[Chunk]:
         Chunk(
             id="stub-prezzi#1",
             text=(
-                "(STUB) La tariffa mensile per una camera singola standard è di 480 euro, "
-                "comprensiva di utenze, connessione internet e pulizia degli spazi comuni. "
-                "La camera doppia costa 360 euro a persona."
+                "(STUB) La retta annuale in camera singola è di 10.450 euro, "
+                "comprensiva di utenze, pasti dal lunedì al venerdì e percorso formativo. "
+                "La camera doppia costa 8.250 euro all'anno."
             ),
             source="stub-prezzi-2026.md",
             tier="public",

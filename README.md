@@ -70,7 +70,7 @@ src/nest_assistant/
 ├── guardrails.py  TEAM 5  last check before a human reads it
 └── llm.py         the one place we talk to a model
 
-fixtures/    synthetic Nest-like documents, in Italian. Committed. Invented.
+fixtures/    Nest-like documents, in Italian. Committed. Public facts or invented.
 data/        real Nest documents. Gitignored. Never committed.
 eval/        the question set and the scorecards
 prompts/     system prompts — reviewed and versioned, like any other logic
@@ -106,8 +106,10 @@ tools/       the data scanner that stops all of the above going wrong
 
 ## Where the data lives
 
-The synthetic corpus in `fixtures/` is entirely invented — fake prices, fake
-rules, fake activities, written in Italian with tier labels. It is what makes
+The corpus in `fixtures/` is safe to publish. The two public documents
+summarise what Nest already publishes (prices, admissions), in our own words;
+everything at resident and staff tier — rules, activities, procedures — is
+invented. All of it is in Italian, with tier labels. It is what makes
 this repository safe to be public, and it is enough to do every task in the
 workshop.
 
@@ -117,5 +119,6 @@ write should care which one it got.
 
 ## Licence
 
-MIT for the code. The synthetic fixtures are invented and free to reuse. There is
-no Nest data in this repository, and there never will be.
+MIT for the code. The resident and staff fixtures are invented and free to
+reuse; the public ones summarise information Nest already publishes. There is no
+private Nest data in this repository, and there never will be.
