@@ -60,16 +60,17 @@ def corpus_dir() -> Path:
 # Models
 # ---------------------------------------------------------------------------
 
-ANSWER_MODEL = os.environ.get("NEST_ANSWER_MODEL", "claude-opus-5-5")
+ANSWER_MODEL = os.environ.get("NEST_ANSWER_MODEL", "claude-sonnet-5-5")
 """The hosted model ANSWER generates with (pair 1).
 
 In October 2027 this line, and only this line, becomes a self-hosted model. If
 swapping it turns out to need changes anywhere else, an interface was dishonest.
 
-Cost knob: each team has a hard monthly spend limit. If a team burns through it,
-``NEST_ANSWER_MODEL=claude-sonnet-5-5`` (or ``claude-haiku-4-5``) in ``.env`` is
-cheaper — and measuring what that costs you in answer quality with `make eval`
-is a better afternoon than arguing about it.
+Cost knob: each team has a hard monthly spend limit, and Sonnet is the default
+so it lasts the day. ``NEST_ANSWER_MODEL=claude-haiku-4-5`` in ``.env`` is
+cheaper still, ``claude-opus-5-5`` is stronger and dearer — and measuring what
+either costs you in answer quality with `make eval` is a better afternoon than
+arguing about it.
 """
 
 JUDGE_MODEL = os.environ.get("NEST_JUDGE_MODEL", "claude-sonnet-5-5")
