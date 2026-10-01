@@ -1,0 +1,10 @@
+# gitleaks config for CI. Keeps the default rules and allowlists only the
+# scanner's own test file, whose "secrets" are invented samples that exist to
+# prove tools/scan_data.py catches them.
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Invented samples used to test the data scanner"
+paths = ['''tests/test_data_scanner\.py''']

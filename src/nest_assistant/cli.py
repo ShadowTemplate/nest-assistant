@@ -219,6 +219,11 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def main(argv: list[str] | None = None) -> int:
+    # Windows consoles default to cp1252, which cannot print "→" or Italian
+    # answers with curly quotes. Force UTF-8 so the demo works on every laptop.
+    for stream in (sys.stdout, sys.stderr):
+        if hasattr(stream, "reconfigure"):
+            stream.reconfigure(encoding="utf-8", errors="replace")
     load_dotenv()
     args = build_parser().parse_args(argv)
     return args.func(args)
