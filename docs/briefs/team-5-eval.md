@@ -14,9 +14,9 @@ March, and the go/no-go in summer 2027.
 
 | | Task | Block | |
 |---|---|---|---|
-| A | W1-5.1 The question set | 150 min | |
-| B | W1-5.2 Evaluation harness | 105 min | |
-| C | W1-5.3 Red team and guardrails | 60 min | **NOT droppable** |
+| A | W1-5.1 The question set | 120 min | |
+| B | W1-5.2 Evaluation harness | 60 + 60 min | |
+| C | W1-5.3 Red team and guardrails | 75 min | **NOT droppable** |
 
 ---
 
@@ -73,7 +73,7 @@ everything. Check both.
 layer in `guardrails.py`, and `eval/FINDINGS.md`: what worked, what didn't, what
 is still open.
 
-**At 16:15 you run a 15-minute all-room red team.** Everyone attacks the
+**At 16:45 you run a 15-minute all-room red team.** Everyone attacks the
 integrated system; you collect the findings. It is the most fun fifteen minutes
 of the day and it produces real results — and it means the inevitable "let's see
 if we can make it say something appalling" happens *inside* the workshop, on

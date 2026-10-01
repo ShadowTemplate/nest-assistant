@@ -7,7 +7,7 @@
 
 ## Components
 
-| Component | Team | 10:00 | 12:25 | 15:15 | 17:00 |
+| Component | Team | 10:00 | 12:00 | 15:30 | 17:30 |
 |---|---|---|---|---|---|
 | INGEST | 1 | STUB | | | |
 | INDEX | 2 | STUB | | | |
@@ -25,8 +25,8 @@ implementation in place and the owning team has flipped `STATUS` in their module
 | When | Questions | Retrieval | Correctness | Refusal P/R | **Tier leaks** |
 |---|---|---|---|---|---|
 | 10:00 baseline | | | | | |
-| 15:15 checkpoint | | | | | |
-| 16:30 freeze | | | | | |
+| 15:30 checkpoint | | | | | |
+| 17:00 freeze | | | | | |
 
 Tier leaks must reach **zero** and stay there. Any other number in that column
 makes the rest of the row irrelevant.
@@ -47,6 +47,6 @@ to March 2027 — do not lose them.
 ## Notes for the checkpoint document
 
 Rough notes during the day; `CHECKPOINT-2026-10.md` gets written from these
-starting at 15:30. Do not let that slip to 16:45.
+starting at 15:45. Do not let that slip to 17:15.
 
 - 

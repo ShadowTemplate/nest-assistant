@@ -2,7 +2,7 @@
 
 > **TEAM 5 owns this directory.** This file is a template with the sections you
 > must fill in. Every heading below is a question you have to answer in writing
-> before 17:00.
+> before 17:30.
 
 ## What is measured
 

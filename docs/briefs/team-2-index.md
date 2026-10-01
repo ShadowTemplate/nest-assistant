@@ -13,9 +13,9 @@ is real, so you are not waiting for anybody.
 
 | | Task | Block | |
 |---|---|---|---|
-| A | W1-2.1 Embeddings and vector index | 150 min | |
-| B | W1-2.2 Tier-filtered retrieval | 105 min | **the important one** |
-| C | W1-2.3 Hybrid search (BM25) | 60 min | **droppable** |
+| A | W1-2.1 Embeddings and vector index | 120 min | |
+| B | W1-2.2 Tier-filtered retrieval | 60 + 60 min | **the important one** |
+| C | W1-2.3 Hybrid search (BM25) | 75 min | **droppable** |
 
 ---
 

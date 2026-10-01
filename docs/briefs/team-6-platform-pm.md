@@ -5,14 +5,14 @@ Two or three of you coordinate; the rest do cross-cutting engineering. Your work
 is what makes the other five teams' work survive until March.
 
 **You own** `.pre-commit-config.yaml`, `tools/scan_data.py`,
-`.github/workflows/ci.yml`, `docs/PROGRESS.md`, and — by 17:00 —
+`.github/workflows/ci.yml`, `docs/PROGRESS.md`, and — by 17:30 —
 `CHECKPOINT-2026-10.md`.
 
 | | Task | Block | |
 |---|---|---|---|
-| A | W1-6.1 Data hygiene enforcement | 150 min | |
-| B | W1-6.2 Integration and CI | 105 min | |
-| C | W1-6.3 Coordination and the checkpoint | **all day**, then 60 min | |
+| A | W1-6.1 Data hygiene enforcement | 120 min | |
+| B | W1-6.2 Integration and CI | 60 + 60 min | |
+| C | W1-6.3 Coordination and the checkpoint | **all day**, then 75 min | |
 
 ---
 
@@ -44,7 +44,7 @@ the visible board of which stubs have been replaced.
 it, and the board on the whiteboard matches `make board`.
 
 `make board` reads `STATUS` from each module, so it cannot lie. Update the
-whiteboard from it at **12:25** and **15:15**, in front of everyone.
+whiteboard from it at **12:00** and **15:30**, in front of everyone.
 
 ## C · Coordination — this is a real job, all day
 
@@ -55,15 +55,15 @@ whiteboard from it at **12:25** and **15:15**, in front of everyone.
 - **Keep the progress board** (`docs/PROGRESS.md` and the whiteboard).
 - **Own the tier register.** When team 1 asks "is this document resident or
   staff?", you are the single answer, so that six teams do not invent six.
-- **Run the 15:15 checkpoint.** Six teams, 90 seconds each, standing up: what
+- **Run the 15:30 checkpoint.** Six teams, 90 seconds each, standing up: what
   works that didn't at 10:00, what is blocked, what you need from another team.
   Enforce the clock — Gianvito says nothing for the first ten minutes.
-- **Watch for the drowning team.** At 14:00, if one team is sinking and two are
+- **Watch for the drowning team.** At 14:45, if one team is sinking and two are
   ahead, say so. Moving people onto the critical path is what happens on real
   projects.
 
-**By 17:00: `CHECKPOINT-2026-10.md`.** Start it at **15:30**; do not let it slip
-to 16:45.
+**By 17:30: `CHECKPOINT-2026-10.md`.** Start it at **15:45**; do not let it slip
+to 17:15.
 
 It covers: what works, what is broken, what each team learned, what is next, who
 knows what, and how to run it. **Write it for someone who has been away for four

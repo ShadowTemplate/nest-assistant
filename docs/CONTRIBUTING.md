@@ -7,7 +7,7 @@ push to the same place without the pipeline ever being broken.
 
 **The pipeline must never be broken.** At any minute of the day, anybody must be
 able to run `make check` and see it pass. That is what lets six teams work in
-parallel without an integration disaster at 17:00.
+parallel without an integration disaster at 17:30.
 
 So: commit small, commit often, and never push something you have not run
 `make check` against.
@@ -40,7 +40,7 @@ Closes W1-2.2.
 
 ## Pull requests
 
-Small PRs get reviewed in five minutes; big ones get reviewed at 16:50 by
+Small PRs get reviewed in five minutes; big ones get reviewed at 17:20 by
 somebody who has stopped reading carefully.
 
 A PR needs:

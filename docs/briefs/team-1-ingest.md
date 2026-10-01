@@ -13,9 +13,9 @@ document you did not emit, or fix a tier you got wrong.
 
 | | Task | Block | |
 |---|---|---|---|
-| A | W1-1.1 Data inventory | 150 min | |
-| B | W1-1.2 Ingestion pipeline | 105 min | |
-| C | W1-1.3 Chunking comparison | 60 min | **droppable** |
+| A | W1-1.1 Data inventory | 120 min | |
+| B | W1-1.2 Ingestion pipeline | 60 + 60 min | |
+| C | W1-1.3 Chunking comparison | 75 min | **droppable** |
 
 ---
 

@@ -14,14 +14,14 @@ resolve(user_id: str) -> Tier
 
 **You consume** nothing that can block you — the stub pipeline answers from
 minute zero.
-**You feed** the demo at 16:40, and the only impression anyone outside this room
+**You feed** the demo at 17:10, and the only impression anyone outside this room
 will ever have of the project.
 
 | | Task | Block | |
 |---|---|---|---|
-| A | W1-4.1 Telegram bot | 150 min | |
-| B | W1-4.2 Identity and tier resolution | 105 min | |
-| C | W1-4.3 Conversation context | 60 min | **droppable** |
+| A | W1-4.1 Telegram bot | 120 min | |
+| B | W1-4.2 Identity and tier resolution | 60 + 60 min | |
+| C | W1-4.3 Conversation context | 75 min | **droppable** |
 
 ---
 

@@ -19,14 +19,15 @@ not. Mixing the two inside a task is how a term drifts.
 
 | | |
 |---|---|
-| 10:00–12:30 | **Block A** — task 1 |
-| 12:30–13:30 | Lunch. Not a work block. |
-| 13:30–15:15 | **Block B** — task 2 |
-| 15:15–15:30 | **Checkpoint** — 90 seconds per team, standing up |
-| 15:30–16:30 | **Block C** — task 3, the droppable one |
-| 16:15 | All-room red team, 15 minutes |
-| 16:30 | **Freeze.** Merge, `make check`, `make eval`, scorecard on screen |
-| 17:00 | Close |
+| 10:00–12:00 | **Block A** — task 1 |
+| 12:00–13:00 | **Block B, part 1** — task 2. Commit and push everything by 13:00 |
+| 13:00–14:30 | Lunch. Not a work block. |
+| 14:30–15:30 | **Block B, part 2** — `git pull`, `make check`, carry on with task 2 |
+| 15:30–15:45 | **Checkpoint** — 90 seconds per team, standing up |
+| 15:45–17:00 | **Block C** — task 3, the droppable one |
+| 16:45 | All-room red team, 15 minutes |
+| 17:00 | **Freeze.** Merge, `make check`, `make eval`, scorecard on screen |
+| 17:30 | Close |
 
 ## The one instruction for everybody
 
