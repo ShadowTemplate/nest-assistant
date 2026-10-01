@@ -13,7 +13,7 @@ generate(q: str, chunks: list[Chunk], lang: str) -> Answer
 
 | | Task | Block | |
 |---|---|---|---|
-| A | W1-3.1 Grounded generation | 120 min | |
+| A | W1-3.1 Grounded generation | 150 min | |
 | B | W1-3.2 Refusal and abstention | 105 min | **the most important task of the day** |
 | C | W1-3.3 Answer quality pass | 60 min | **droppable** |
 

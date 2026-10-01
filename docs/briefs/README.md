@@ -1,6 +1,6 @@
 # Team briefs — Workshop 1, October 2026
 
-One page per team. **Print all six; hand each team its own at 10:15.**
+One page per team. **Print all six; hand each team its own at 09:45.**
 
 They are in English because everything you will read all day — code, docstrings,
 tests, `ARCHITECTURE.md` — is in English. The room is Italian; the repository is
@@ -19,7 +19,7 @@ not. Mixing the two inside a task is how a term drifts.
 
 | | |
 |---|---|
-| 10:30–12:30 | **Block A** — task 1 |
+| 10:00–12:30 | **Block A** — task 1 |
 | 12:30–13:30 | Lunch. Not a work block. |
 | 13:30–15:15 | **Block B** — task 2 |
 | 15:15–15:30 | **Checkpoint** — 90 seconds per team, standing up |

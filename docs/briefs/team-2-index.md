@@ -13,7 +13,7 @@ is real, so you are not waiting for anybody.
 
 | | Task | Block | |
 |---|---|---|---|
-| A | W1-2.1 Embeddings and vector index | 120 min | |
+| A | W1-2.1 Embeddings and vector index | 150 min | |
 | B | W1-2.2 Tier-filtered retrieval | 105 min | **the important one** |
 | C | W1-2.3 Hybrid search (BM25) | 60 min | **droppable** |
 
@@ -23,7 +23,7 @@ is real, so you are not waiting for anybody.
 
 **The stub does not filter by tier.** Ask it a question as `public` and it hands
 you a `staff` chunk. That is deliberate, it is today's most dangerous bug, and it
-is your task B. `make eval` reports it as **tier leaks, in red**, from 10:30 —
+is your task B. `make eval` reports it as **tier leaks, in red**, from 10:00 —
 and when you fix it, it goes green in front of the whole room.
 
 There is a second filter downstream in `pipeline.py` so the leak never reaches a

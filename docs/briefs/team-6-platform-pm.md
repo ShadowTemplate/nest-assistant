@@ -10,7 +10,7 @@ is what makes the other five teams' work survive until March.
 
 | | Task | Block | |
 |---|---|---|---|
-| A | W1-6.1 Data hygiene enforcement | 120 min | |
+| A | W1-6.1 Data hygiene enforcement | 150 min | |
 | B | W1-6.2 Integration and CI | 105 min | |
 | C | W1-6.3 Coordination and the checkpoint | **all day**, then 60 min | |
 
@@ -56,7 +56,7 @@ whiteboard from it at **12:25** and **15:15**, in front of everyone.
 - **Own the tier register.** When team 1 asks "is this document resident or
   staff?", you are the single answer, so that six teams do not invent six.
 - **Run the 15:15 checkpoint.** Six teams, 90 seconds each, standing up: what
-  works that didn't at 10:30, what is blocked, what you need from another team.
+  works that didn't at 10:00, what is blocked, what you need from another team.
   Enforce the clock — Gianvito says nothing for the first ten minutes.
 - **Watch for the drowning team.** At 14:00, if one team is sinking and two are
   ahead, say so. Moving people onto the critical path is what happens on real

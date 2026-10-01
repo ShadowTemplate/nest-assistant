@@ -14,7 +14,7 @@ March, and the go/no-go in summer 2027.
 
 | | Task | Block | |
 |---|---|---|---|
-| A | W1-5.1 The question set | 120 min | |
+| A | W1-5.1 The question set | 150 min | |
 | B | W1-5.2 Evaluation harness | 105 min | |
 | C | W1-5.3 Red team and guardrails | 60 min | **NOT droppable** |
 
@@ -88,5 +88,5 @@ a fix. Say so out loud when you find one.
 
 **Which number goes on the whiteboard, and when the red-team session starts.**
 They own the board and the clock. Tell them your baseline as soon as you have
-one — a red `tier_leaks` at 10:30 turning green when team 2 lands is the most
+one — a red `tier_leaks` at 10:00 turning green when team 2 lands is the most
 motivating thing available all day, and it only works if it is public.

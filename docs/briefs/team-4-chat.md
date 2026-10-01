@@ -19,7 +19,7 @@ will ever have of the project.
 
 | | Task | Block | |
 |---|---|---|---|
-| A | W1-4.1 Telegram bot | 120 min | |
+| A | W1-4.1 Telegram bot | 150 min | |
 | B | W1-4.2 Identity and tier resolution | 105 min | |
 | C | W1-4.3 Conversation context | 60 min | **droppable** |
 

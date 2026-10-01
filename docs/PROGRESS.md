@@ -7,7 +7,7 @@
 
 ## Components
 
-| Component | Team | 10:30 | 12:25 | 15:15 | 17:00 |
+| Component | Team | 10:00 | 12:25 | 15:15 | 17:00 |
 |---|---|---|---|---|---|
 | INGEST | 1 | STUB | | | |
 | INDEX | 2 | STUB | | | |
@@ -24,7 +24,7 @@ implementation in place and the owning team has flipped `STATUS` in their module
 
 | When | Questions | Retrieval | Correctness | Refusal P/R | **Tier leaks** |
 |---|---|---|---|---|---|
-| 10:30 baseline | | | | | |
+| 10:00 baseline | | | | | |
 | 15:15 checkpoint | | | | | |
 | 16:30 freeze | | | | | |
 
@@ -33,7 +33,7 @@ makes the rest of the row irrelevant.
 
 ## Backlog
 
-Ideas raised in the 10:00 brainstorm that are not in today's plan. Genuine input
+Ideas raised in the 09:30 brainstorm that are not in today's plan. Genuine input
 to March 2027 — do not lose them.
 
 - <!-- photographed from the whiteboard; type them up before you leave -->
