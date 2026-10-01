@@ -16,7 +16,7 @@ is most of the engineering.
 ## Quick start
 
 ```bash
-git clone https://github.com/<nest-org>/nest-assistant.git
+git clone https://github.com/ShadowTemplate/nest-assistant.git
 cd nest-assistant
 
 make setup      # installs everything. Big download — do this on good wifi.
