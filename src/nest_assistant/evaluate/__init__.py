@@ -45,7 +45,7 @@ from typing import Any
 
 import yaml
 
-from ..config import DATA_DIR, EVAL_DIR, RESULTS_DIR, corpus_dir
+from ..config import BUILD_DIR, DATA_DIR, EVAL_DIR, RESULTS_DIR, corpus_dir
 from ..schema import PipelineProtocol, Scorecard, tier_allows
 
 OWNER = "TEAM 5 — EVAL"
@@ -54,6 +54,9 @@ STATUS = "stub"  # flip to "real" when you replace run() below. `make board` rea
 
 QUESTIONS_PATH = EVAL_DIR / "questions.yaml"
 REDTEAM_PATH = EVAL_DIR / "redteam.yaml"
+FULL_RESULTS_DIR = BUILD_DIR / "eval-results"
+"""Unredacted scorecards, answer text included. Gitignored (under ``build/``):
+for debugging on the laptop that produced them, never for committing."""
 
 
 def load_questions(path: Path | None = None, corpus: str | None = None) -> list[dict[str, Any]]:
@@ -199,17 +202,42 @@ def run(pipeline: PipelineProtocol, questions: list[dict[str, Any]] | None = Non
     )
 
 
-def save(scorecard: Scorecard, label: str = "") -> Path:
-    """Write a dated scorecard to ``eval/results/``.
+def redact(scorecard: Scorecard) -> dict[str, Any]:
+    """The scorecard as it may be committed: answer text only for ``public`` questions.
 
-    March compares itself against October by reading these files. Commit them —
-    they contain no Nest data, only questions and scores.
+    An answer to a resident or staff question quotes resident or staff documents —
+    the residents' guide holds the wifi password, the room list holds names. The
+    repository is public, so those answers keep everything except their text:
+    the score, whether it refused, which chunk ids it cited, what leaked.
     """
-    RESULTS_DIR.mkdir(parents=True, exist_ok=True)
+    card = scorecard.to_dict()
+    for row in card["details"]:
+        tier = row.get("tier", "public")
+        if tier != "public" and "answer" in row:
+            row["answer"] = f"(withheld: {tier} tier)"
+    return card
+
+
+def save(scorecard: Scorecard, label: str = "") -> Path:
+    """Write a dated scorecard to ``eval/results/``, and a full copy to ``build/``.
+
+    March compares itself against October by reading ``eval/results/``. Commit
+    those files: they hold questions and scores, and answer text only for
+    ``public`` questions (see :func:`redact`). The full copy, every answer
+    included, goes to :data:`FULL_RESULTS_DIR` — gitignored, for debugging here.
+
+    Returns the path of the committable file.
+    """
     stamp = date.today().isoformat()
     name = f"scorecard-{stamp}{'-' + label if label else ''}.json"
+
+    FULL_RESULTS_DIR.mkdir(parents=True, exist_ok=True)
+    full = json.dumps(scorecard.to_dict(), indent=2, ensure_ascii=False)
+    (FULL_RESULTS_DIR / name).write_text(full, encoding="utf-8")
+
+    RESULTS_DIR.mkdir(parents=True, exist_ok=True)
     path = RESULTS_DIR / name
-    path.write_text(json.dumps(scorecard.to_dict(), indent=2, ensure_ascii=False), encoding="utf-8")
+    path.write_text(json.dumps(redact(scorecard), indent=2, ensure_ascii=False), encoding="utf-8")
     return path
 
 
@@ -217,6 +245,8 @@ __all__ = [
     "run",
     "load_questions",
     "save",
+    "redact",
+    "FULL_RESULTS_DIR",
     "QUESTIONS_PATH",
     "REDTEAM_PATH",
     "OWNER",

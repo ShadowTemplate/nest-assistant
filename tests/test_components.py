@@ -165,6 +165,27 @@ def test_the_set_contains_questions_that_must_be_refused():
     assert "answer" in expectations
 
 
+def test_saved_scorecard_withholds_non_public_answers(tmp_path, monkeypatch):
+    """The committed scorecard must not quote resident or staff documents."""
+    from nest_assistant.schema import Scorecard
+
+    monkeypatch.setattr(evaluate, "RESULTS_DIR", tmp_path / "results")
+    monkeypatch.setattr(evaluate, "FULL_RESULTS_DIR", tmp_path / "build")
+    card = Scorecard(
+        n_questions=3,
+        details=[
+            {"id": "a", "tier": "public", "answer": "costa 10.450 euro"},
+            {"id": "b", "tier": "resident", "answer": "la password è segreta123"},
+            {"id": "c", "tier": "staff", "answer": "in camera 120 abita Leone"},
+        ],
+    )
+    committed = evaluate.save(card, "test").read_text(encoding="utf-8")
+    assert "10.450" in committed
+    assert "segreta123" not in committed and "Leone" not in committed
+    full = tmp_path / "build"
+    assert any("segreta123" in f.read_text(encoding="utf-8") for f in full.glob("*.json"))
+
+
 def test_eval_runs_and_produces_a_scorecard():
     from nest_assistant.pipeline import Pipeline
 

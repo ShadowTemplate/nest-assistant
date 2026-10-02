@@ -57,8 +57,15 @@ make eval              # print the scorecard
 make eval-save         # print it and write a dated file to eval/results/
 ```
 
-Results are committed. They contain questions and scores, never Nest documents.
-In March 2027 the first thing anyone does is open October's scorecard.
+Results in `eval/results/` are committed. They contain questions and scores, and
+answer text **only for `public` questions**: an answer to a resident or staff
+question quotes resident or staff documents (the residents' guide holds the wifi
+password), so its text is written as `(withheld: resident tier)`. Everything
+else about it — score, refusal, cited chunk ids, leaks — is kept.
+
+`--save` also writes a full copy, every answer included, to
+`build/eval-results/`. That folder is gitignored: use it to debug, never commit
+it. In March 2027 the first thing anyone does is open October's scorecard.
 
 ## Red team
 

@@ -104,7 +104,9 @@ def cmd_eval(args: argparse.Namespace) -> int:
     print(scorecard.summary())
     print()
     if args.save:
-        print(f"saved to {evaluate.save(scorecard, args.label)}")
+        path = evaluate.save(scorecard, args.label)
+        print(f"saved to {path}  (commit this: non-public answers withheld)")
+        print(f"full copy {evaluate.FULL_RESULTS_DIR / path.name}  (gitignored, every answer)")
     return 0 if scorecard.tier_leaks == 0 else 1
 
 

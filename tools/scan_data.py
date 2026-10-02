@@ -248,17 +248,30 @@ def staged_files() -> list[Path]:
 
 
 def all_files(root: Path) -> list[Path]:
-    """Every file worth scanning in the tree.
+    """Every file worth scanning in the tree: everything git could commit.
 
-    ``data/`` is walked past, not into. It is gitignored, so its contents are not
-    a leak — and on a laptop that has the real corpus, walking into it would
-    print a screenful of true positives about documents that are exactly where
-    they belong. A ``data/`` file that is *staged for commit* still gets blocked:
-    pre-commit passes those paths in explicitly, and :func:`check_path` catches
-    them there.
+    Gitignored files are walked past, not into — ``data/`` with the real corpus,
+    ``.env`` with your team's key, ``build/`` with generated chunks. They are not
+    a leak; they are exactly where they belong, and scanning them would turn
+    ``make check`` red on every laptop that followed the setup instructions. A
+    gitignored file that is *force-staged* still gets blocked: pre-commit passes
+    staged paths in explicitly, and :func:`check_path` catches them there.
+
+    Outside a git checkout (a downloaded zip), falls back to walking the tree.
     """
     skip = SKIP_DIRS | FORBIDDEN_DIRS
-    return [p for p in root.rglob("*") if p.is_file() and not (set(p.parts) & skip)]
+    try:
+        out = subprocess.run(
+            ["git", "ls-files", "--cached", "--others", "--exclude-standard", "-z"],
+            cwd=root,
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        candidates = [root / name for name in out.stdout.split("\0") if name]
+    except (subprocess.CalledProcessError, FileNotFoundError):
+        candidates = list(root.rglob("*"))
+    return [p for p in candidates if p.is_file() and not (set(p.parts) & skip)]
 
 
 def main(argv: list[str] | None = None) -> int:
