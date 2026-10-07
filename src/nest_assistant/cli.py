@@ -97,13 +97,25 @@ def cmd_search(args: argparse.Namespace) -> int:
 
 def cmd_eval(args: argparse.Namespace) -> int:
     """Score the whole system and print the card."""
-    from . import evaluate
+    from . import evaluate, llm
     from .pipeline import Pipeline
 
     scorecard = evaluate.run(Pipeline())
+    if not llm.available():
+        offline = (
+            "NO API KEY: only retrieval hit rate and tier leaks are meaningful; "
+            "answers and refusals were not produced by a model"
+        )
+        scorecard.notes = f"{scorecard.notes} | {offline}" if scorecard.notes else offline
     print()
     print(scorecard.summary())
     print()
+    if not llm.available():
+        print("  ⚠️  No ANTHROPIC_API_KEY: the model was never called.")
+        print("     Retrieval hit rate and tier leaks are real.")
+        print("     Correctness and refusals are not: without a model, answers can only refuse.")
+        print("     Put your team's key in .env to measure answers.")
+        print()
     if args.save:
         path = evaluate.save(scorecard, args.label)
         print(f"saved to {path}  (commit this: non-public answers withheld)")
