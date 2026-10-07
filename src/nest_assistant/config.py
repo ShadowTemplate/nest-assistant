@@ -73,10 +73,16 @@ either costs you in answer quality with `make eval` is a better afternoon than
 arguing about it.
 """
 
-JUDGE_MODEL = os.environ.get("NEST_JUDGE_MODEL", "claude-sonnet-5-5")
+JUDGE_MODEL = os.environ.get("NEST_JUDGE_MODEL", "claude-opus-5-5")
 """The model EVAL uses as a judge. Deliberately named separately from
 ANSWER_MODEL: a model grading its own homework is a known problem, and being
-able to point them at different models is how you check for it."""
+able to point them at different models is how you check for it.
+
+Stronger than the answer model on purpose: spotting a claim the retrieved chunks
+do not support is the hard part of judging, and the judge runs only during
+``make eval``, so the extra cost is small. **Keep it fixed.** October's and
+March's scorecards are only comparable if the same judge graded both — changing
+the judge changes the ruler, not the system."""
 
 EMBEDDING_MODEL = os.environ.get(
     "NEST_EMBEDDING_MODEL", "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
