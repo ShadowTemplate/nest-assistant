@@ -63,3 +63,10 @@ def test_a_broken_component_produces_a_refusal_not_a_crash(monkeypatch):
 def test_empty_and_hostile_input_does_not_crash():
     for question in ["", "   ", "?" * 500, "'; DROP TABLE chunks;--", "🙂"]:
         assert isinstance(Pipeline().ask(question), Answer)
+
+
+def test_tests_never_reach_a_paid_model():
+    """conftest.py blanks the key, even when a real one is in .env."""
+    from nest_assistant import llm
+
+    assert not llm.available()

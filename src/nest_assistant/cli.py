@@ -9,6 +9,7 @@ Two entry points for the same commands, on purpose::
 from __future__ import annotations
 
 import argparse
+import os
 import sys
 from importlib import import_module
 
@@ -160,6 +161,8 @@ def cmd_check(args: argparse.Namespace) -> int:
     try:
         from .pipeline import Pipeline
 
+        # Offline on purpose: runs before every push, so it must never bill a key.
+        os.environ["ANTHROPIC_API_KEY"] = ""
         answer = Pipeline().ask("Quanto costa una camera singola?", "public")
         pipeline_ok = bool(answer.text)
         print(f"  pipeline{'':<13} {'✅' if pipeline_ok else '❌'}")
