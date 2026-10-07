@@ -36,13 +36,15 @@ independent layers that both work, not one layer and one excuse.
 embedding model you chose **and why it matters that it handles Italian**.
 
 **Done when** *"quanto costa una stanza singola?"* returns chunks a human agrees
-are relevant — note that the price list says *tariffa mensile camera singola* and
-shares not one word with the question — and you can explain the ranking.
+are relevant — note that the price list says *retta annuale … Singola* and shares
+almost no words with the question (*costa* ≠ *retta*, *stanza* ≠ *camera*) — and
+you can explain the ranking.
 
 > **Stuck 15 min?** `NEST_EMBEDDING_MODEL` in `config.py` has a starting model,
-> already downloaded by `make setup`. It is a starting point, not a
-> recommendation: measure it against an English-first model and write down the
-> difference. That measurement is half the task.
+> downloaded by `make setup` (or `make warm`; `make check` says if it is
+> missing). It is a starting point, not a recommendation: measure it against an
+> English-first model and write down the difference. That measurement is half
+> the task.
 
 ## B · Tier-filtered retrieval — your definition of done is a test
 

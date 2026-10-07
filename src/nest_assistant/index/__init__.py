@@ -25,8 +25,8 @@ means two independent layers that both work, not one layer and one excuse.
 
 Stuck for 15 minutes?
 ---------------------
-``tests/test_index.py`` has a skipped test named ``test_public_never_sees_private``.
-Unskip it. It is your definition of done.
+``tests/test_components.py`` has a skipped test named
+``test_public_never_sees_private``. Unskip it. It is your definition of done.
 """
 
 from __future__ import annotations

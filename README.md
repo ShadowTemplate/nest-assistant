@@ -34,7 +34,8 @@ until somebody replaces it. Replacing them is what the workshop is.
 Every target is a one-line wrapper. Use these directly:
 
 ```bash
-uv sync --all-extras     # = make setup
+uv sync --all-extras     # = make setup, part 1
+uv run nest warm         # = make setup, part 2: the embedding model (~500 MB)
 uv run nest check        # = make check
 uv run pytest            # (make check runs this too)
 uv run nest demo         # = make demo

@@ -13,7 +13,14 @@ import os
 import sys
 from importlib import import_module
 
-from .config import CHUNKS_PATH, corpus_dir, ensure_build_dir, load_dotenv
+from .config import (
+    CHUNKS_PATH,
+    EMBEDDING_MODEL,
+    corpus_dir,
+    embedding_model_cached,
+    ensure_build_dir,
+    load_dotenv,
+)
 from .schema import TIERS
 
 # The progress board. `make board` prints this, and the PM coordinators copy it
@@ -191,6 +198,12 @@ def cmd_check(args: argparse.Namespace) -> int:
         ok = False
         print(f"  dependencies{'':<9} ❌ run `make setup`")
 
+    # A warning, not a failure: `make setup-lite` legitimately skips the model.
+    if embedding_model_cached():
+        print(f"  embedding model{'':<6} ✅")
+    else:
+        print(f"  embedding model{'':<6} ⚠️  not downloaded — run `make warm` (~500 MB, good wifi)")
+
     print("  " + "-" * 40)
     if ok:
         code = f"NEST-{platform.system()[:3].upper()}-{version.major}{version.minor}-OK"
@@ -198,6 +211,22 @@ def cmd_check(args: argparse.Namespace) -> int:
         return 0
     print("\n  ❌ Something is wrong. Post the output above in #setup.\n")
     return 1
+
+
+def cmd_warm(args: argparse.Namespace) -> int:
+    """Download the embedding model now, so Saturday's wifi never has to."""
+    if embedding_model_cached():
+        print(f"  {EMBEDDING_MODEL} is already cached.")
+        return 0
+    try:
+        from sentence_transformers import SentenceTransformer
+    except ImportError:
+        print("  sentence-transformers is not installed — run `make setup` first.")
+        return 1
+    print(f"  downloading {EMBEDDING_MODEL} (~500 MB)…")
+    SentenceTransformer(EMBEDDING_MODEL)
+    print("  cached.")
+    return 0
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -228,6 +257,9 @@ def build_parser() -> argparse.ArgumentParser:
 
     p = sub.add_parser("board", help="which stubs are still stubs")
     p.set_defaults(func=cmd_board)
+
+    p = sub.add_parser("warm", help="pre-download the embedding model")
+    p.set_defaults(func=cmd_warm)
 
     p = sub.add_parser("check", help="verify the environment (pre-work)")
     p.set_defaults(func=cmd_check)

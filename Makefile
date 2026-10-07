@@ -18,8 +18,9 @@ help:  ## show this help
 
 # --- setup ------------------------------------------------------------------
 
-setup:  ## install everything (do this at home, on good wifi — it is a big download)
+setup:  ## install everything, embedding model included (good wifi — it is a big download)
 	$(UV) sync --all-extras
+	@$(UV) run nest warm
 	@echo ""
 	@echo "  Installed. Now run: make check"
 	@echo ""
@@ -31,11 +32,8 @@ setup-lite:  ## install the minimum (fast, works offline afterwards; no embeddin
 	@echo "  Run 'make setup' before the workshop when you have decent wifi."
 	@echo ""
 
-warm:  ## pre-download the embedding model so the workshop wifi never has to
-	$(UV) run python -c "\
-from nest_assistant.config import EMBEDDING_MODEL; \
-from sentence_transformers import SentenceTransformer; \
-print('downloading', EMBEDDING_MODEL); SentenceTransformer(EMBEDDING_MODEL); print('cached.')"
+warm:  ## pre-download the embedding model so the workshop wifi never has to (setup runs it)
+	@$(UV) run nest warm
 
 hooks:  ## install the git pre-commit hooks (TEAM 6 — everyone needs this)
 	$(UV) run pre-commit install

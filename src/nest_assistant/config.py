@@ -94,6 +94,21 @@ starting point, not a recommendation. Measure it against alternatives with
 `make eval` and write down what you found.
 """
 
+
+def embedding_model_cached(model: str | None = None) -> bool:
+    """True if the embedding model is already in the local Hugging Face cache.
+
+    Checks the folder on disk without importing anything heavy, so
+    ``make check`` can warn about a missing model in under a second.
+    """
+    model = model or EMBEDDING_MODEL
+    hub = os.environ.get("HF_HUB_CACHE") or os.path.join(
+        os.environ.get("HF_HOME") or os.path.join(Path.home(), ".cache", "huggingface"), "hub"
+    )
+    snapshots = Path(hub) / f"models--{model.replace('/', '--')}" / "snapshots"
+    return snapshots.is_dir() and any(snapshots.iterdir())
+
+
 DEFAULT_K = int(os.environ.get("NEST_K", "5"))
 DEFAULT_LANG = os.environ.get("NEST_LANG", "it")
 

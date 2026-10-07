@@ -82,3 +82,13 @@ def test_scorecard_summary_flags_a_leak():
 
 def test_every_tier_is_covered_by_the_literal():
     assert set(TIERS) == {"public", "resident", "staff"}
+
+
+def test_embedding_model_cache_check(tmp_path, monkeypatch):
+    """make check warns about a missing embedding model; this is how it knows."""
+    from nest_assistant.config import embedding_model_cached
+
+    monkeypatch.setenv("HF_HUB_CACHE", str(tmp_path))
+    assert not embedding_model_cached("org/model")
+    (tmp_path / "models--org--model" / "snapshots" / "abc123").mkdir(parents=True)
+    assert embedding_model_cached("org/model")
