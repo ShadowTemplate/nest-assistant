@@ -53,6 +53,26 @@ A PR needs:
 - If it changes a number, **the before and after from `make eval`**. "It feels
   better" is not a claim this project accepts.
 
+### Who reviews
+
+The team **downstream** of yours: it consumes your output, so it is the one that
+notices when the shape is wrong.
+
+| PR from | Reviewed by | Because |
+|---|---|---|
+| INGEST | INDEX | INDEX indexes the chunks |
+| INDEX | ANSWER | ANSWER answers from what is retrieved |
+| ANSWER | CHAT | CHAT shows the answer to the user |
+| CHAT | EVAL | EVAL tests the bot end to end |
+| EVAL | INGEST | fresh eyes on the questions and the scoring |
+| PLATFORM | any team | CI and hooks affect everyone |
+
+On top of that, PLATFORM's engineers look at **every PR that touches
+`schema.py` or a component interface**. Ask for both reviews in the PR.
+
+A PR waiting more than 15 minutes for review goes to the PM coordinators, not
+to the instructor.
+
 ## Changing an interface
 
 The signatures in `schema.py` and the six component interfaces are **frozen for

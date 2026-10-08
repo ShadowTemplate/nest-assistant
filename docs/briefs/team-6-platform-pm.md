@@ -46,6 +46,13 @@ it, and the board on the whiteboard matches `make board`.
 `make board` reads `STATUS` from each module, so it cannot lie. Update the
 whiteboard from it at **12:00** and **15:30**, in front of everyone.
 
+**The engineers are the integration owners, all day.** `main` is protected: a
+PR needs one approval and green CI. Each PR is reviewed by the team downstream
+(INGEST → INDEX → ANSWER → CHAT → EVAL → INGEST; PLATFORM by any team; table in
+`docs/CONTRIBUTING.md`). You add a second review on **every PR that touches
+`schema.py` or a component interface**, and you help with merge conflicts
+around lunch, when everyone merges at once.
+
 ## C · Coordination — this is a real job, all day
 
 **Throughout the day:**
@@ -61,6 +68,25 @@ whiteboard from it at **12:00** and **15:30**, in front of everyone.
 - **Watch for the drowning team.** At 14:45, if one team is sinking and two are
   ahead, say so. Moving people onto the critical path is what happens on real
   projects.
+- **Keep reviews moving.** A PR waiting more than 15 minutes comes to you:
+  find a reviewer in the downstream team (see `docs/CONTRIBUTING.md`).
+- **Hand out work to a team that finishes early** — see below. Write what they
+  took on the board, so two teams never pick the same thing.
+
+**When a team finishes early**, in this order:
+
+1. **Their own C task.** INGEST W1-1.3 chunking comparison, INDEX W1-2.3 hybrid
+   search, ANSWER W1-3.3 quality pass, CHAT W1-4.3 conversation context. EVAL's
+   W1-5.3 red team is not optional, so EVAL is not done until it is.
+2. **The seams.** Red-team another team's piece, add real questions to the eval
+   set (residents know what people ask), or pair with the drowning team.
+3. **A March task** from `workshop/02-task-graph-pair-1.md`, only the ones that
+   need neither the server nor the secretariat: W2-G quality push, W2-E feedback
+   loop, W2-C logging, W2-I monitoring, W2-J English path, W2-K WhatsApp
+   write-up, W2-D anonymisation (design note only). Prefer design notes and
+   measurements to finished features, so March still has building to do.
+
+Not today: W2-A deploy, W2-B real identity, W2-H demo prep.
 
 **By 17:30: `CHECKPOINT-2026-10.md`.** Start it at **15:45**; do not let it slip
 to 17:15.
