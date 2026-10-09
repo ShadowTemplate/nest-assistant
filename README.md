@@ -56,6 +56,41 @@ uv run nest bot          # = make bot
 There are pre-commit hooks that enforce both (`make hooks`), but they are the
 second line of defence. You are the first.
 
+## The API key and Claude Code
+
+Your team gets one key on the day, by private Telegram message. It pays for two
+different things, and they are set up differently.
+
+**1. The assistant — everyone.** The code you are building calls the model to
+write answers, and `make eval` calls it to grade them. That needs the key in
+`.env`:
+
+```bash
+cp .env.example .env      # then paste the key after ANTHROPIC_API_KEY=
+```
+
+Without it, everything still runs on stubs — you just get no real answers.
+
+**2. Claude Code — only if you have no Claude subscription.** Claude Code does not
+read `.env`. It uses your own Claude login, unless `ANTHROPIC_API_KEY` is set in
+your shell, in which case it bills that key instead.
+
+- **You have a Claude subscription (Pro, Max…):** just run `claude`. Do **not**
+  export the key. Your coding runs on your plan, and the team's budget is left
+  for the assistant and for those without one.
+- **You don't:** set the key in your shell first, then run `claude`.
+
+  ```bash
+  export ANTHROPIC_API_KEY=sk-ant-...         # macOS, Linux, Git Bash
+  $env:ANTHROPIC_API_KEY="sk-ant-..."         # Windows PowerShell
+  ```
+
+  This lasts for that terminal only; a new terminal needs it again.
+
+**Not sure which one you are using?** Type `/status` inside Claude Code. If it
+shows an API key and you have a subscription, run `unset ANTHROPIC_API_KEY`
+(PowerShell: `Remove-Item Env:ANTHROPIC_API_KEY`) and restart `claude`.
+
 ## What is in here
 
 ```
