@@ -9,13 +9,13 @@
 
 | Component | Team | 10:00 | 12:00 | 15:30 | 17:30 |
 |---|---|---|---|---|---|
-| INGEST | 1 | STUB | | | |
-| INDEX | 2 | STUB | | | |
-| ANSWER | 3 | STUB | | | |
-| IDENTITY | 4 | STUB | | | |
-| BOT | 4 | STUB | | | |
-| EVAL | 5 | STUB | | | |
-| GUARDRAILS | 5 | STUB | | | |
+| INGEST | 1 | STUB | STUB | | |
+| INDEX | 2 | STUB | REAL | | |
+| ANSWER | 3 | STUB | REAL | | |
+| IDENTITY | 4 | STUB | STUB | | |
+| BOT | 4 | STUB | REAL | | |
+| EVAL | 5 | STUB | STUB | | |
+| GUARDRAILS | 5 | STUB | STUB | | |
 
 Flip a cell to **REAL** only when `make check` is green with the real
 implementation in place and the owning team has flipped `STATUS` in their module.
@@ -49,4 +49,4 @@ to March 2027 — do not lose them.
 Rough notes during the day; `CHECKPOINT-2026-10.md` gets written from these
 starting at 15:45. Do not let that slip to 17:15.
 
-- 
+-
