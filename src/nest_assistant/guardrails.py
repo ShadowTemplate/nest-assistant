@@ -146,34 +146,48 @@ def _truncate(text: str) -> str:
 def apply(answer: Answer, chunks: list[Chunk], tier: Tier) -> Answer:
     """Last check before the answer leaves the building.
 
-    Rules, in order. The first six replace the answer with the standard refusal;
-    the last two repair it. Each one that fires is counted and logged.
+    Rules, in order. ``invented_citation``, ``hidden_citation`` and ``too_long``
+    repair the answer; every other rule replaces it with the standard refusal.
+    Each one that fires is counted and logged.
 
     1. ``invented_citation`` — a cited id that was never retrieved (repaired,
        and counted).
-    2. ``hidden_chunk_text`` — the answer repeats text from a chunk the caller's
+    2. ``hidden_citation`` — a cited id of a chunk the caller's tier may not
+       see (repaired, and counted). Should never fire: the pipeline filters by
+       tier before generating, so if it does, INDEX has a bug.
+    3. ``hidden_chunk_text`` — the answer repeats text from a chunk the caller's
        tier may not see. Should never fire: if it does, INDEX has a bug.
-    3. ``system_prompt_leak`` — the answer repeats the system prompt.
-    4. ``injection_in_output`` — the answer agrees to drop its rules, adopts a
+    4. ``system_prompt_leak`` — the answer repeats the system prompt.
+    5. ``injection_in_output`` — the answer agrees to drop its rules, adopts a
        new persona, or grants itself access.
-    5. ``unsupported_promise`` — a commitment ("garantiamo", "ti assicuro")
+    6. ``unsupported_promise`` — a commitment ("garantiamo", "ti assicuro")
        that no cited document contains.
-    6. ``personal_data`` — a phone number or email that is in no retrieved
+    7. ``personal_data`` — a phone number or email that is in no retrieved
        chunk, for a non-staff caller.
-    7. ``hostile_tone`` — legal threats or similar, in Nest's voice.
-    8. ``uncited_answer`` — a non-refusal with no surviving citation: the model
+    8. ``hostile_tone`` — legal threats or similar, in Nest's voice.
+    9. ``uncited_answer`` — a non-refusal with no surviving citation: the model
        spoke from memory.
-    9. ``too_long`` — cut at a sentence boundary (repaired).
+    10. ``too_long`` — cut at a sentence boundary (repaired).
 
     Known limits: the text rules are phrase-based (Italian only), so a reworded
-    or translated attack can pass. Hidden-chunk detection needs the hidden chunk
-    to be in ``chunks``; the pipeline passes only visible ones, so the real
-    defence is INDEX's filter. See ``eval/FINDINGS.md``.
+    or translated attack can pass. Hidden-chunk and hidden-citation detection need
+    the hidden chunk to be in ``chunks``; the pipeline passes only visible ones,
+    so the real defence is INDEX's filter. See ``eval/FINDINGS.md``.
     """
+    # Citations are checked against the chunks this tier may see, not against
+    # everything that was passed in: a cite to a hidden chunk is as bad as an
+    # invented one, and survives if the filter is skipped.
+    visible = [c for c in chunks if tier_allows(tier, c.tier)]
+    hidden_ids = {c.id for c in chunks} - {c.id for c in visible}
     before = list(answer.citations)
-    answer = enforce_citations(answer, chunks)
-    if answer.citations != before:
-        _fire("invented_citation", tier, ", ".join(c for c in before if c not in answer.citations))
+    answer = enforce_citations(answer, visible)
+    dropped = [c for c in before if c not in answer.citations]
+    invented = [c for c in dropped if c not in hidden_ids]
+    hidden = [c for c in dropped if c in hidden_ids]
+    if invented:
+        _fire("invented_citation", tier, ", ".join(invented))
+    if hidden:
+        _fire("hidden_citation", tier, ", ".join(hidden))
 
     if answer.refused:
         return answer

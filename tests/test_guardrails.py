@@ -54,6 +54,40 @@ def test_invented_citation_is_dropped_and_counted():
     assert guardrails.counts() == {"invented_citation": 1}
 
 
+# A paraphrase of STAFF that shares no six-word run with it, so hidden_chunk_text
+# cannot catch it and only the citation check stands between it and the user.
+PARAPHRASE = (
+    "Se si resta indietro con i pagamenti per oltre due mesi, l'ufficio manda un avviso scritto."
+)
+
+
+def test_a_citation_to_a_higher_tier_chunk_is_dropped_and_counted():
+    result = guardrails.apply(
+        answer(PARAPHRASE, ["prezzi#1", "procedure#1"]), [PRICES, STAFF], "public"
+    )
+    assert result.citations == ["prezzi#1"]
+    assert not result.refused
+    assert guardrails.counts() == {"hidden_citation": 1}
+
+
+def test_an_answer_that_only_cites_a_hidden_chunk_ends_up_refused():
+    result = guardrails.apply(answer(PARAPHRASE, ["procedure#1"]), [PRICES, STAFF], "public")
+    assert result.refused and result.text == REFUSAL_IT
+    assert result.citations == []
+    assert guardrails.counts() == {"hidden_citation": 1, "uncited_answer": 1}
+
+
+def test_a_hidden_citation_is_not_counted_as_invented():
+    guardrails.apply(answer(PARAPHRASE, ["prezzi#1", "procedure#1"]), [PRICES, STAFF], "public")
+    assert "invented_citation" not in guardrails.counts()
+
+
+def test_a_staff_asker_keeps_a_citation_to_a_staff_chunk():
+    result = guardrails.apply(answer(PARAPHRASE, ["procedure#1"]), [STAFF], "staff")
+    assert result.citations == ["procedure#1"]
+    assert guardrails.counts() == {}
+
+
 def test_repeating_a_hidden_chunk_is_refused_and_counted():
     leaked = "In caso di morosità superiore a due mesi la segreteria invia un sollecito formale."
     result = guardrails.apply(answer(leaked), [PRICES, STAFF], "public")
