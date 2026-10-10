@@ -1,8 +1,8 @@
 # How INDEX finds the right text, and keeps the wrong text out
 
-> **TEAM 2 owns this document.** It holds the two written deliverables of the
-> day: which embedding model we chose and why (W1-2.1), and how tier filtering
-> is designed (W1-2.2).
+> **TEAM 2 owns this document.** It holds the written deliverables of the day:
+> which embedding model we chose and why (W1-2.1), how tier filtering is
+> designed (W1-2.2), and what keyword search adds (W1-2.3).
 
 ## What `search()` does
 
@@ -10,8 +10,8 @@
 question + tier
    │
    ├─ 1. drop every chunk this tier may not see        (never scored, never returned)
-   ├─ 2. turn the question into a vector               ("query: " + question)
-   ├─ 3. score the remaining chunks: cosine similarity  (one dot product each)
+   ├─ 2. meaning: cosine similarity to the question    ("query: " + question)
+   ├─ 3. keywords: BM25 re-orders meaning's top 5       (exact words and numbers rise)
    └─ 4. return the best k, highest first               (ties keep document order)
 ```
 
@@ -141,3 +141,121 @@ best defence is a second person checking it.
 
 Results: tier leaks went from **37** (the stub) to **0**, and stay at 0 on the
 fixtures, the real documents and every question × tier combination.
+
+## W1-2.3 · Hybrid search: what keywords add
+
+**Final design: meaning picks the five candidates, keywords re-order them.** The
+five chunks ANSWER reads are always exactly the five meaning search would pick;
+keywords only change their order. They can promote an exact match ("camera
+tripla", "cena comunitaria", a price) and can never push a good chunk out.
+
+### How we got there
+
+Every step measured with `tools/retrieval_report.py`. **Rule: choices were made
+on the fixtures only; the real documents were the exam, never used to choose.**
+"Right chunk" = a chunk from an expected document containing the expected fact.
+MRR scores 1 for first place, ½ for second, ⅓ for third..., averaged.
+
+| Step | What changed | Fixtures: 1st / top 5 / MRR | **Real docs: 1st / top 5 / MRR** |
+|---|---|---|---|
+| C0 | meaning only (e5-small), the baseline | 93% / 100% / 0.97 | 65% / 88% / 0.73 |
+| C1 | keyword only, BM25 on plain words | 67% / 87% / 0.77 | 47% / 82% / 0.61 |
+| C2 | keyword only, Italian-aware words | 80% / 93% / 0.86 | 59% / 76% / 0.67 |
+| C3 | fuse everything, equal weights | 87% / 93% / 0.91 | 65% / 82% / 0.72 |
+| C4 | leave chunks with no shared word out of the fusion | 87% / 93% / 0.91 | 65% / 82% / 0.72 |
+| C5 | keyword weight 0–1.5 tried; 0.5 best on fixtures | 93% / 93% / 0.94 | 65% / 82% / 0.72 |
+| C6 | meaning picks 5, keywords re-order them | 93% / 100% / 0.96 | 71% / 88% / 0.77 |
+| **C7** | **fusion `k` 60 → 2 inside the re-ordering** | **93% / 100% / 0.97** | **71% / 88% / 0.77** |
+
+C6/C7 against meaning alone, on the real documents: right chunk first 65% → **71%**,
+in top 3 76% → **82%**, right document first 76% → **82%**, MRR 0.73 → **0.77**,
+in top 5 unchanged at 88% (by construction). `make eval` retrieval hit rate is
+94% either way, and tier leaks stay 0.
+
+**Italian-aware words** (C2): accents dropped (*puo* matches *può*), Italian and
+English stopwords removed, the final vowel of longer words cut so *singola /
+singole / singoli* match, and numbers kept whole (*10.450*, *23:00*, *31/07*).
+It lifted keyword-only first place from 47% to 59% on the real documents.
+
+**Why plain fusion was rejected** (C3–C5). It improved "right document first" but
+pushed one right chunk per corpus out of the top 5: when the question and the
+document use different words (*dormire un amico* vs *ospiti*), keywords vote
+for the wrong chunks and out-vote meaning. Re-ordering only meaning's top five
+keeps the gain and removes that failure.
+
+**Why C7.** Rank fusion gives a chunk `1 / (k + position)`. The paper's `k = 60`
+is meant for long lists; inside five candidates it makes 1st and 5th almost
+equal (1/61 vs 1/65), so keywords could barely re-order anything. Team 1's
+chunks exposed it (below). `k` and the keyword weight were swept on the two dev
+sets (fixtures and the scratch chunks); the rule, fixed before looking at the
+result, was "highest mean MRR on the dev sets". It picked `k = 2`, weight 0.5.
+
+### On Team 1's chunks (the exam)
+
+Team 1's `build/chunks.jsonl`: 111 chunks from all 7 documents, ids unique,
+every tier matching the manifest, the staff room list included. These numbers
+were not used for any choice above.
+
+| 18 questions | right 1st | top 3 | top 5 | MRR | right doc 1st | tier leaks |
+|---|---|---|---|---|---|---|
+| meaning only | 50% | 61% | 89% | 0.62 | 67% | 0 |
+| keyword only | **56%** | **72%** | 83% | **0.66** | **72%** | 0 |
+| **hybrid (C7, what `search()` uses)** | 50% | **72%** | **89%** | 0.63 | 67% | 0 |
+
+`make eval` (no API key, retrieval only): hit rate 89%, tier leaks 0, now with a
+staff document in the corpus.
+
+What changed with Team 1's chunking:
+
+- **Better:** headings stay with their content, so *"A che ora inizia il
+  silenzio?"* went from 4th (scratch chunks) to **1st**.
+- **Worse for meaning:** the three price questions (single, double, triple room)
+  dropped to 5th, where keywords put two of them 1st. The hybrid only lifts
+  them to 4th: it is built never to let keywords override meaning by much.
+- **Keyword search beats meaning on these chunks**, the opposite of the dev sets.
+  Settings that favour keywords more (weight 2) would score 61% here but lose
+  on both dev sets; picking them now would be tuning on the exam. With 15–18
+  questions per set, these differences are one or two questions.
+
+**Next:** Team 1's chunks are now the real corpus, so they should become the
+dev set, and the comparison needs a fresh, larger question set to test on
+(TEAM 5, W1-5.1). Until then, keep the setting chosen by the rule.
+
+### Done-when: a query hybrid gets right and vectors get wrong
+
+- **"Quanto costa una camera singola?"** (real documents): meaning put the price
+  table 2nd; hybrid puts it **1st**, because *camera* and *singola* appear
+  verbatim in the table.
+- **"Quando si fa la cena comunitaria?"** (fixtures): 2nd → **1st**, for the same
+  reason: an exact phrase meaning search blurred.
+
+The price for that: **"A che ora inizia il silenzio la sera?"** slips from 4th to
+5th on the real documents (still read by ANSWER), and **"Posso far dormire un
+amico?"** from 1st to 3rd on the fixtures.
+
+### What keywords cannot fix
+
+- **Cross-language questions.** An Italian question whose answer exists only in
+  an English document shares no words with it: keywords do not help (44th either
+  way). Only a better cross-lingual model or the fact in the Italian documents fixes it.
+- **A heading split from its content.** On the real documents the word
+  *silenzio* and the time *23:00* ended up in two different chunks (the scratch
+  chunker cut mid-page). Keywords find the heading, not the answer. **For INGEST:
+  never separate a heading from what follows it.**
+
+### A side benefit: the no-model fallback
+
+Keyword search needs nothing installed, so it is now what `search()` uses when
+the embedding model is missing (`make setup-lite`, CI). Before, that fallback
+returned chunks in document order: right chunk first went from **0%** to **59%**
+on the real documents and from 0% to 80% on the fixtures.
+
+### Reproduce it
+
+```bash
+uv run python tools/retrieval_report.py --label "what I changed" --methods vector,keyword,hybrid
+uv run python tools/retrieval_report.py --html     # draws every saved run
+```
+
+Both write under `build/` (gitignored): the report quotes chunk ids and, on
+`data/`, describes Nest's documents.
