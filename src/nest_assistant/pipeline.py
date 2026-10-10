@@ -55,7 +55,7 @@ class Pipeline:
         visible = [c for c in retrieved if tier_allows(tier, c.tier)]
 
         try:
-            answer = generate(question, visible, self.lang)
+            answer = generate(question, visible, self.lang, user_tier=tier)
         except Exception:  # noqa: BLE001 - same reason
             answer = Answer(text=REFUSAL_IT, citations=[], confidence=0.0, refused=True)
 

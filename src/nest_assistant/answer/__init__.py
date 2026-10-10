@@ -32,7 +32,7 @@ import re
 
 from .. import llm
 from ..config import DEFAULT_LANG, PROMPTS_DIR
-from ..schema import TIERS, Answer, Chunk, tier_rank
+from ..schema import TIERS, Answer, Chunk, Tier, tier_rank
 
 OWNER = "TEAM 3 — ANSWER"
 INTERFACE = "answer.generate(q: str, chunks: list[Chunk], lang: str) -> Answer"
@@ -67,14 +67,19 @@ def score_confidence(raw: str, cited: list[str], supplied: int) -> float:
     return round(min(0.4 + 0.5 * grounded + bonus, 0.95), 2)
 
 
-def format_footer(confidence: float, chunks: list[Chunk]) -> str:
-    """Footer line: the confidence score and the privilege level of the sources.
+def format_footer(confidence: float, chunks: list[Chunk], user_tier: Tier | None = None) -> str:
+    """Footer line: the confidence score, the asker's tier and the tier requested.
 
-    The privilege is the highest tier among the cited chunks, i.e. the lowest
-    tier of asker that could have been given this answer.
+    The tier requested is the highest tier among the cited chunks, i.e. the
+    lowest tier of asker that could have been given this answer. The asker's own
+    tier is shown only when the caller knows it.
     """
     tier = max((c.tier for c in chunks), key=tier_rank, default=TIERS[0])
-    return f"__Affidabilità: {confidence:.0%} · Livello: {TIER_LABEL_IT.get(tier, tier)}__"
+    parts = [f"Affidabilità: {confidence:.0%}"]
+    if user_tier is not None:
+        parts.append(f"Il tuo livello: {TIER_LABEL_IT.get(user_tier, user_tier)}")
+    parts.append(f"Livello richiesto: {TIER_LABEL_IT.get(tier, tier)}")
+    return f"__{' · '.join(parts)}__"
 
 
 def load_system_prompt(lang: str = DEFAULT_LANG) -> str:
@@ -102,7 +107,9 @@ def format_context(chunks: list[Chunk]) -> str:
 # ---------------------------------------------------------------------------
 # TEAM 3 — REPLACE ME
 # ---------------------------------------------------------------------------
-def generate(q: str, chunks: list[Chunk], lang: str = DEFAULT_LANG) -> Answer:
+def generate(
+    q: str, chunks: list[Chunk], lang: str = DEFAULT_LANG, user_tier: Tier | None = None
+) -> Answer:
     """Answer ``q`` using only ``chunks``, in ``lang``.
 
     Contract you must satisfy:
@@ -120,6 +127,8 @@ def generate(q: str, chunks: list[Chunk], lang: str = DEFAULT_LANG) -> Answer:
     Use :func:`~nest_assistant.llm.complete` to call the model, and
     :func:`load_system_prompt` to get your prompt. Both exist so that October's
     hosted model and October-2027's self-hosted one look identical from here.
+
+    ``user_tier`` is the asker's tier; when given, the footer shows it.
 
     W1-3.1: grounded generation. Refusal thresholds are W1-3.2.
     """
@@ -147,7 +156,7 @@ def generate(q: str, chunks: list[Chunk], lang: str = DEFAULT_LANG) -> Answer:
 
     confidence = score_confidence(raw, cited, len(chunks))
     cited_chunks = [c for c in chunks if c.id in cited]
-    text = f"{text}\n\n{format_footer(confidence, cited_chunks)}"
+    text = f"{text}\n\n{format_footer(confidence, cited_chunks, user_tier)}"
     return Answer(text=text, citations=cited, confidence=confidence, refused=False)
 
 
