@@ -14,6 +14,7 @@ import pytest
 from nest_assistant import answer as answer_mod
 from nest_assistant import evaluate, identity, index, ingest
 from nest_assistant.bot import handle_message
+from nest_assistant.config import embedding_model_cached
 from nest_assistant.schema import TIERS, Answer, Chunk, tier_allows
 from nest_assistant.storage import read_chunks, write_chunks
 
@@ -59,12 +60,43 @@ def test_search_returns_chunks():
 
 def test_search_respects_k():
     assert len(index.search("prezzi", "staff", k=2)) <= 2
+    assert index.search("prezzi", "staff", k=0) == []
 
 
-@pytest.mark.skip(
-    reason="TEAM 2 — task W1-2.2. Delete this line and make the test pass. "
-    "Until you do, `make eval` reports tier leaks and the board stays red."
+def test_search_is_ranked_best_first():
+    scores = [s for _, s in index.search_with_scores("quanto costa una singola?", "staff", k=10)]
+    assert scores == sorted(scores, reverse=True)
+
+
+def test_search_is_deterministic():
+    """EVAL compares October with March: the same query must rank the same way."""
+    first = [(c.id, s) for c, s in index.search_with_scores("orari silenzio", "staff", k=10)]
+    for _ in range(3):
+        assert [
+            (c.id, s) for c, s in index.search_with_scores("orari silenzio", "staff", 10)
+        ] == first
+
+
+@pytest.mark.skipif(
+    not embedding_model_cached(),
+    reason="embedding model not downloaded — run `make warm`",
 )
+def test_search_matches_meaning_not_words(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+    """The question shares no content word with the right chunk (costa ≠ retta)."""
+    corpus = [
+        Chunk("silenzio#1", "Il silenzio è richiesto dalle 23 alle 7.", "r.md", "public", "it"),
+        Chunk("prezzi#1", "Retta annuale camera singola: 10.450 euro.", "p.md", "public", "it"),
+        Chunk(
+            "palestra#1", "La palestra apre alle 6 e chiude a mezzanotte.", "r.md", "public", "it"
+        ),
+    ]
+    monkeypatch.setattr(index, "load_corpus", lambda: corpus)
+    monkeypatch.setattr(index, "INDEX_DIR", tmp_path)
+    monkeypatch.setattr(index, "EMBEDDINGS_PATH", tmp_path / "embeddings.npy")
+    monkeypatch.setattr(index, "META_PATH", tmp_path / "meta.json")
+    assert index.search("quanto costa una stanza singola?", "public", k=1)[0].id == "prezzi#1"
+
+
 def test_public_never_sees_private():
     """A `public` caller must never receive a resident or staff chunk.
 
@@ -73,12 +105,33 @@ def test_public_never_sees_private():
     Try it against every question in eval/questions.yaml, not just this one —
     the leak you have not thought of is the one that matters.
     """
+    questions = ["morosità", "regolamento", "prezzi", "procedure interne"]
+    questions += [q["question"] for q in evaluate.load_questions(corpus="all")]
     for tier in TIERS:
-        for question in ["morosità", "regolamento", "prezzi", "procedure interne"]:
-            for chunk in index.search(question, tier, k=10):
+        for question in questions:
+            for chunk in index.search(question, tier, k=100):
                 assert tier_allows(tier, chunk.tier), (
                     f"{tier} caller received a {chunk.tier} chunk: {chunk.id}"
                 )
+
+
+def test_chunk_with_broken_tier_is_hidden(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+    """A typo in a tier label must hide the chunk, not show it to everyone."""
+    corpus = [
+        Chunk("ok#1", "Orari della mensa.", "a.md", "public", "it"),
+        Chunk("typo#1", "Procedura morosità.", "b.md", "Staff ", "it"),  # type: ignore[arg-type]
+    ]
+    monkeypatch.setattr(index, "load_corpus", lambda: corpus)
+    monkeypatch.setattr(index, "INDEX_DIR", tmp_path)
+    monkeypatch.setattr(index, "EMBEDDINGS_PATH", tmp_path / "embeddings.npy")
+    monkeypatch.setattr(index, "META_PATH", tmp_path / "meta.json")
+    for tier in TIERS:
+        assert [c.id for c in index.search("morosità", tier, k=10)] == ["ok#1"]
+
+
+def test_unknown_caller_tier_is_refused():
+    with pytest.raises(ValueError):
+        index.search("prezzi", "admin", k=5)  # type: ignore[arg-type]
 
 
 # --- TEAM 3 — ANSWER --------------------------------------------------------
