@@ -71,7 +71,7 @@ def test_valid_citation_is_kept_and_stripped_from_the_text(monkeypatch):
     assert result.refused is False
     assert result.citations == ["prezzi.pdf#1"]
     assert "[" not in result.text
-    assert result.text == "Costa 10.450 euro all'anno."
+    assert result.text.startswith("Costa 10.450 euro all'anno.\n\n")
 
 
 def test_several_citations_are_deduplicated_in_order(monkeypatch):

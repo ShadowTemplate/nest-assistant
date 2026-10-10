@@ -153,6 +153,30 @@ def test_hybrid_only_reorders_what_meaning_picked(tmp_path: Path, monkeypatch: p
         assert hybrid == vector
 
 
+@pytest.mark.skipif(
+    not embedding_model_cached(),
+    reason="embedding model not downloaded — run `make warm`",
+)
+def test_search_uses_the_hybrid_ranking(monkeypatch: pytest.MonkeyPatch):
+    """search() is what the pipeline calls: it must rank with keywords fused into meaning.
+
+    Checks the call, not just the output, so a docstring and the code cannot
+    drift apart again (PR #14 review).
+    """
+    calls = []
+    real_fuse = index._fuse
+
+    def spy(*args: object, **kwargs: object) -> object:
+        calls.append(1)
+        return real_fuse(*args, **kwargs)  # type: ignore[arg-type]
+
+    monkeypatch.setattr(index, "_fuse", spy)
+    question = "quanto costa una camera singola?"
+    results = [c.id for c in index.search(question, "staff", k=5)]
+    assert calls, "search() did not fuse keywords into the meaning ranking"
+    assert results == [c.id for c, _ in index.search_with_scores(question, "staff", 5, "hybrid")]
+
+
 def test_public_never_sees_private():
     """A `public` caller must never receive a resident or staff chunk.
 
@@ -300,3 +324,17 @@ def test_eval_runs_and_produces_a_scorecard():
     assert 0.0 <= scorecard.retrieval_hit_rate <= 1.0
     assert 0.0 <= scorecard.answer_correctness <= 1.0
     assert scorecard.tier_leaks >= 0
+
+
+def test_answer_footer_shows_confidence_and_privilege(monkeypatch: pytest.MonkeyPatch):
+    chunks = [
+        Chunk("a#1", "La singola costa 600 euro.", "a.md", "public", "it"),
+        Chunk("b#1", "Orari di silenzio dalle 23.", "b.md", "resident", "it"),
+    ]
+    monkeypatch.setattr(
+        answer_mod.llm, "complete", lambda *a, **k: "Costa 600 euro [a#1]. Silenzio dalle 23 [b#1]."
+    )
+    result = answer_mod.generate("domanda", chunks, "it")
+    assert result.confidence == 0.8  # two documents: CONFIDENCE_CORROBORATED
+    assert result.text.endswith("Affidabilità: 80% · Livello: residente__")
+    assert "[a#1]" not in result.text

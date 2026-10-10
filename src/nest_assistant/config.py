@@ -38,8 +38,32 @@ RESULTS_DIR = ROOT / "eval" / "results"
 # ---------------------------------------------------------------------------
 
 
-_NOT_CORPUS = {".gitkeep", "README.md"}
-"""The two files ``data/`` contains when it is empty of actual documents."""
+NOT_DOCUMENTS = {
+    "manifest.yaml",
+    "INVENTORY.md",
+    "README.md",
+    "allowlist.json",
+    "bot_testers.json",
+    ".gitkeep",
+}
+"""Files that sit at the top of ``data/`` next to the documents but are not documents.
+Shared with INGEST, so ``data/`` counts as a corpus exactly when ingest would find
+something in it."""
+
+
+def is_document(path: Path, root: Path) -> bool:
+    """True for a file under ``root`` that is a candidate document.
+
+    The names in ``NOT_DOCUMENTS`` are only skipped at the top level, so a
+    ``staff/README.md`` listed in the manifest is still read. Anything inside a
+    hidden folder (``.git``, ``.cache``) or with a hidden name is skipped.
+    """
+    rel = path.relative_to(root)
+    return (
+        path.is_file()
+        and not (len(rel.parts) == 1 and rel.name in NOT_DOCUMENTS)
+        and not any(part.startswith(".") for part in rel.parts)
+    )
 
 
 def corpus_dir() -> Path:
@@ -49,9 +73,7 @@ def corpus_dir() -> Path:
     This is why a student with no access to the real corpus can still do every
     task on the list, and why nothing anyone writes should care which one it got.
     """
-    if DATA_DIR.exists() and any(
-        p for p in DATA_DIR.rglob("*") if p.is_file() and p.name not in _NOT_CORPUS
-    ):
+    if DATA_DIR.exists() and any(is_document(p, DATA_DIR) for p in DATA_DIR.rglob("*")):
         return DATA_DIR
     return FIXTURES_DIR
 
@@ -84,14 +106,15 @@ do not support is the hard part of judging, and the judge runs only during
 March's scorecards are only comparable if the same judge graded both — changing
 the judge changes the ruler, not the system."""
 
-EMBEDDING_MODEL = os.environ.get("NEST_EMBEDDING_MODEL", "intfloat/multilingual-e5-small")
+EMBEDDING_MODEL = os.environ.get("NEST_EMBEDDING_MODEL", "intfloat/multilingual-e5-base")
 """TEAM 2's choice: multilingual, trained on short question → answering passage.
 
-Measured against the starting model (paraphrase-multilingual-MiniLM-L12-v2) and
-an English-first one (all-MiniLM-L6-v2): the right chunk ranked first went from
-53% to 65% on the real documents and from 53% to 93% on the fixtures, while the
-English-first model managed 29% and 40%. Numbers and method in docs/INDEX.md.
-E5 models need ``"query: "`` / ``"passage: "`` prefixes — ``index`` adds them.
+e5-small beat the starting model (paraphrase-multilingual-MiniLM-L12-v2) and an
+English-first one; e5-base (1.1 GB, ~26 ms a question on a laptop CPU) then beat
+e5-small on Team 1's real chunks: right chunk first 50% → 61%, in the top 5
+89% → 94%, with the hybrid search in ``index``. Numbers and method in
+docs/INDEX.md. E5 models need ``"query: "`` / ``"passage: "`` prefixes —
+``index`` adds them.
 """
 
 

@@ -113,7 +113,7 @@ function showTip(ev, lines) {
 const hideTip = () => { tip.style.display = "none"; };
 
 // ---- 1 · journey ---------------------------------------------------------------
-// Each label's "own" method: the one whose name the step introduced, else the last listed.
+// Each step shows its hybrid run if it has one, else the last method listed.
 function journey(corpus) {
   const byLabel = new Map();
   for (const r of RUNS.filter(r => r.corpus === corpus)) {

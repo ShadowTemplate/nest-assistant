@@ -32,7 +32,7 @@ import re
 
 from .. import llm
 from ..config import DEFAULT_LANG, PROMPTS_DIR
-from ..schema import Answer, Chunk
+from ..schema import TIERS, Answer, Chunk, tier_rank
 
 OWNER = "TEAM 3 — ANSWER"
 INTERFACE = "answer.generate(q: str, chunks: list[Chunk], lang: str) -> Answer"
@@ -102,6 +102,20 @@ def estimate_confidence(cited: list[str]) -> float:
     """
     documents = {cid.rsplit("#", 1)[0] for cid in cited}
     return CONFIDENCE_CORROBORATED if len(documents) >= 2 else CONFIDENCE_ONE_DOCUMENT
+
+
+TIER_LABEL_IT = {"public": "pubblico", "resident": "residente", "staff": "staff"}
+"""How a tier is named in the footer."""
+
+
+def format_footer(confidence: float, chunks: list[Chunk]) -> str:
+    """Footer line: the confidence score and the privilege level of the sources.
+
+    The privilege is the highest tier among the cited chunks, i.e. the lowest
+    tier of asker that could have been given this answer.
+    """
+    tier = max((c.tier for c in chunks), key=tier_rank, default=TIERS[0])
+    return f"__Affidabilità: {confidence:.0%} · Livello: {TIER_LABEL_IT.get(tier, tier)}__"
 
 
 def load_system_prompt(lang: str = DEFAULT_LANG) -> str:
@@ -180,7 +194,10 @@ def generate(q: str, chunks: list[Chunk], lang: str = DEFAULT_LANG) -> Answer:
     if admits_gap(text):
         return refusal
 
-    return Answer(text=text, citations=cited, confidence=estimate_confidence(cited), refused=False)
+    confidence = estimate_confidence(cited)
+    cited_chunks = [c for c in chunks if c.id in cited]
+    text = f"{text}\n\n{format_footer(confidence, cited_chunks)}"
+    return Answer(text=text, citations=cited, confidence=confidence, refused=False)
 
 
 __all__ = [
@@ -188,6 +205,7 @@ __all__ = [
     "load_system_prompt",
     "format_context",
     "estimate_confidence",
+    "format_footer",
     "admits_gap",
     "REFUSAL_IT",
     "OWNER",
