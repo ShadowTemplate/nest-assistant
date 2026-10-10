@@ -217,12 +217,14 @@ def apply(answer: Answer, chunks: list[Chunk], tier: Tier) -> Answer:
         _fire("hidden_citation", tier, ", ".join(hidden))
     if dropped and answer.citations:
         # ANSWER built the footer from the citations before they were checked: its
-        # level could still name a tier the asker may not see. Rebuild it.
+        # level could still name a tier the asker may not see. Rebuild it, keeping
+        # the asker's own tier if the footer showed it.
         body, footer = split_footer(answer.text)
         if footer:
             kept = [c for c in visible if c.id in answer.citations]
             answer.confidence = estimate_confidence(answer.citations)
-            answer.text = f"{body}\n\n{format_footer(answer.confidence, kept)}"
+            shown_tier = tier if "Il tuo livello" in footer else None
+            answer.text = f"{body}\n\n{format_footer(answer.confidence, kept, shown_tier)}"
 
     if answer.refused:
         return answer

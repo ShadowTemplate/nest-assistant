@@ -340,3 +340,10 @@ def test_answer_footer_shows_confidence_and_privilege(monkeypatch: pytest.Monkey
         "Affidabilità: 80% · Il tuo livello: staff · Livello richiesto: residente__"
     )
     assert "[a#1]" not in result.text
+
+
+def test_answer_footer_omits_the_askers_tier_when_it_is_not_given():
+    chunk = Chunk("a#1", "La singola costa 600 euro.", "a.md", "public", "it")
+    footer = answer_mod.format_footer(0.6, [chunk])
+    assert footer == "__Affidabilità: 60% · Livello richiesto: pubblico__"
+    assert "Il tuo livello" not in footer
