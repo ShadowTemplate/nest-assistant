@@ -109,7 +109,7 @@ excuse.
 |---|---|---|---|
 | `ingest` | 1 | `build_chunks(src) -> list[Chunk]` | documents in, clean chunks out |
 | `index` | 2 | `search(q, tier, k) -> list[Chunk]` | find the relevant text, for this person |
-| `answer` | 3 | `generate(q, chunks, lang) -> Answer` | write the answer, or refuse |
+| `answer` | 3 | `generate(q, chunks, lang, user_tier=None) -> Answer` | write the answer, or refuse |
 | `identity` | 4 | `resolve(user_id) -> Tier` | who is asking |
 | `bot` | 4 | `run()` | the part everyone can see |
 | `evaluate` | 5 | `run(pipeline) -> Scorecard` | is any of this working |

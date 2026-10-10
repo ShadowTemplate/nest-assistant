@@ -17,7 +17,7 @@ import logging
 import re
 from collections import Counter, deque
 
-from .answer import REFUSAL_IT, estimate_confidence, format_footer
+from .answer import ASKER_TIER_LABEL, REFUSAL_IT, estimate_confidence, format_footer
 from .config import PROMPTS_DIR
 from .schema import Answer, Chunk, Tier, tier_allows
 
@@ -217,12 +217,14 @@ def apply(answer: Answer, chunks: list[Chunk], tier: Tier) -> Answer:
         _fire("hidden_citation", tier, ", ".join(hidden))
     if dropped and answer.citations:
         # ANSWER built the footer from the citations before they were checked: its
-        # level could still name a tier the asker may not see. Rebuild it.
+        # level could still name a tier the asker may not see. Rebuild it, keeping
+        # the asker's own tier if the footer showed it.
         body, footer = split_footer(answer.text)
         if footer:
             kept = [c for c in visible if c.id in answer.citations]
             answer.confidence = estimate_confidence(answer.citations)
-            answer.text = f"{body}\n\n{format_footer(answer.confidence, kept)}"
+            shown_tier = tier if ASKER_TIER_LABEL in footer else None
+            answer.text = f"{body}\n\n{format_footer(answer.confidence, kept, shown_tier)}"
 
     if answer.refused:
         return answer

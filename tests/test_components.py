@@ -374,7 +374,16 @@ def test_answer_footer_shows_confidence_and_privilege(monkeypatch: pytest.Monkey
     monkeypatch.setattr(
         answer_mod.llm, "complete", lambda *a, **k: "Costa 600 euro [a#1]. Silenzio dalle 23 [b#1]."
     )
-    result = answer_mod.generate("domanda", chunks, "it")
+    result = answer_mod.generate("domanda", chunks, "it", user_tier="staff")
     assert result.confidence == 0.8  # two documents: CONFIDENCE_CORROBORATED
-    assert result.text.endswith("Affidabilità: 80% · Livello: residente__")
+    assert result.text.endswith(
+        "Affidabilità: 80% · Il tuo livello: staff · Livello richiesto: residente__"
+    )
     assert "[a#1]" not in result.text
+
+
+def test_answer_footer_omits_the_askers_tier_when_it_is_not_given():
+    chunk = Chunk("a#1", "La singola costa 600 euro.", "a.md", "public", "it")
+    footer = answer_mod.format_footer(0.6, [chunk])
+    assert footer == "__Affidabilità: 60% · Livello richiesto: pubblico__"
+    assert "Il tuo livello" not in footer

@@ -232,6 +232,28 @@ def test_the_footer_is_rebuilt_when_a_hidden_citation_is_dropped():
     assert result.confidence == 0.6
 
 
+def test_the_rebuilt_footer_keeps_the_askers_tier():
+    text = "La singola costa 10.450 euro.\n\n" + format_footer(0.8, [PRICES, STAFF], "public")
+    assert "Il tuo livello: pubblico" in text
+    result = guardrails.apply(answer(text, ["prezzi#1", "procedure#1"]), [PRICES, STAFF], "public")
+    assert result.text.endswith(format_footer(0.6, [PRICES], "public"))
+    assert "Il tuo livello: pubblico" in result.text
+    assert "staff" not in result.text
+
+
+def test_the_rebuilt_footer_does_not_add_a_tier_the_original_omitted():
+    text = "La singola costa 10.450 euro.\n\n" + format_footer(0.8, [PRICES, STAFF])
+    result = guardrails.apply(answer(text, ["prezzi#1", "procedure#1"]), [PRICES, STAFF], "public")
+    assert "Il tuo livello" not in result.text
+
+
+def test_an_answer_citing_only_hidden_chunks_is_refused_even_with_the_askers_tier():
+    text = "La procedura è riservata.\n\n" + format_footer(0.6, [STAFF], "public")
+    result = guardrails.apply(answer(text, ["procedure#1"]), [PRICES, STAFF], "public")
+    assert result.refused
+    assert "Il tuo livello" not in result.text
+
+
 def test_the_footer_is_left_alone_when_no_citation_is_dropped():
     text = "La singola costa 10.450 euro.\n\n" + format_footer(0.6, [PRICES])
     result = guardrails.apply(answer(text), [PRICES], "public")

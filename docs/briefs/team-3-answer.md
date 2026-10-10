@@ -5,7 +5,7 @@
 `prompts/answer_system.it.md`:
 
 ```python
-generate(q: str, chunks: list[Chunk], lang: str) -> Answer
+generate(q: str, chunks: list[Chunk], lang: str, user_tier: Tier | None = None) -> Answer
 ```
 
 **You consume** chunks from INDEX — their stub works until theirs is real.
