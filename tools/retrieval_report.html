@@ -113,7 +113,7 @@ function showTip(ev, lines) {
 const hideTip = () => { tip.style.display = "none"; };
 
 // ---- 1 · journey ---------------------------------------------------------------
-// Each label's "own" method: the one whose name the step introduced, else the last listed.
+// Each step shows its most advanced method: rerank, then hybrid, else the last listed.
 function journey(corpus) {
   const byLabel = new Map();
   for (const r of RUNS.filter(r => r.corpus === corpus)) {
@@ -121,7 +121,8 @@ function journey(corpus) {
     byLabel.get(r.label).push(r);
   }
   return [...byLabel].map(([label, rs]) => {
-    const pick = rs.find(r => r.method === "hybrid") || rs[rs.length - 1];
+    const pick = rs.find(r => r.method === "rerank") || rs.find(r => r.method === "hybrid")
+      || rs[rs.length - 1];
     return {label, short: label.split(" · ")[0], run: pick};
   });
 }

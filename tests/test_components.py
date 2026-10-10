@@ -131,7 +131,7 @@ def test_without_a_model_search_ranks_by_keywords(tmp_path: Path, monkeypatch: p
     reason="embedding model not downloaded — run `make warm`",
 )
 def test_hybrid_only_reorders_what_meaning_picked(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
-    """Keywords may sharpen the order of meaning's top 5, never change which chunks they are."""
+    """Keywords and the re-ranker may sharpen the order of meaning's top 5, never its contents."""
     corpus = [
         Chunk(f"c#{n}", text, "x.md", "public", "it")
         for n, text in enumerate(
@@ -151,6 +151,14 @@ def test_hybrid_only_reorders_what_meaning_picked(tmp_path: Path, monkeypatch: p
         vector = {c.id for c, _ in index.search_with_scores(question, "public", 5, "vector")}
         hybrid = {c.id for c in index.search(question, "public", k=5)}
         assert hybrid == vector
+
+
+def test_search_works_without_the_reranker(monkeypatch: pytest.MonkeyPatch):
+    """Not downloaded or switched off: search quietly returns the hybrid order."""
+    monkeypatch.setattr(index, "_load_reranker", lambda download=False: None)
+    question = "quanto costa una camera singola?"
+    hybrid = [c.id for c, _ in index.search_with_scores(question, "staff", 10, "hybrid")]
+    assert [c.id for c in index.search(question, "staff", k=10)] == hybrid
 
 
 def test_public_never_sees_private():

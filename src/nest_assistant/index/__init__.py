@@ -36,7 +36,14 @@ import unicodedata
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Any, Literal
 
-from ..config import CHUNKS_PATH, DEFAULT_K, EMBEDDING_MODEL, INDEX_DIR, embedding_model_cached
+from ..config import (
+    CHUNKS_PATH,
+    DEFAULT_K,
+    EMBEDDING_MODEL,
+    INDEX_DIR,
+    RERANK_MODEL,
+    embedding_model_cached,
+)
 from ..ingest import build_chunks
 from ..schema import Chunk, Tier, tier_allows, tier_rank
 from ..storage import read_chunks
@@ -67,6 +74,7 @@ EMBEDDINGS_PATH = INDEX_DIR / "embeddings.npy"
 META_PATH = INDEX_DIR / "meta.json"
 
 _model: Any = None
+_reranker: Any = None
 _cache: dict[str, Any] = {}  # fingerprint -> (vectors, chunk_ids), for this process
 
 
@@ -202,11 +210,11 @@ def search(q: str, tier: Tier = "public", k: int = DEFAULT_K) -> list[Chunk]:
     return [chunk for chunk, _ in search_with_scores(q, tier, k, "hybrid")]
 
 
-Method = Literal["hybrid", "vector", "keyword"]
+Method = Literal["rerank", "hybrid", "vector", "keyword"]
 
 
 def search_with_scores(
-    q: str, tier: Tier = "public", k: int = DEFAULT_K, method: Method = "hybrid"
+    q: str, tier: Tier = "public", k: int = DEFAULT_K, method: Method = "rerank"
 ) -> list[tuple[Chunk, float]]:
     """:func:`search`, with each chunk's score. ``method`` picks the ranking.
 
@@ -217,10 +225,15 @@ def search_with_scores(
     ``"keyword"``: BM25 over the words of question and chunk. 0 means no word in
     common; there is no upper bound.
 
-    ``"hybrid"`` (what :func:`search` uses): meaning picks the top
-    :data:`RERANK_DEPTH`, keywords re-order them, fused by position
-    (:func:`_fuse`). The score only orders results; it is not comparable with
-    the other two.
+    ``"hybrid"``: meaning picks the top :data:`RERANK_DEPTH`, keywords re-order
+    them, fused by position (:func:`_fuse`).
+
+    ``"rerank"`` (what :func:`search` uses): ``"hybrid"``, then a cross-encoder
+    re-orders the same top :data:`RERANK_DEPTH` by reading question and chunk
+    together (:func:`_rerank`). Skipped if that model is missing.
+
+    For ``"hybrid"`` and ``"rerank"`` the score only orders results; it is not
+    comparable with the other methods.
 
     With no embedding model installed every method falls back to ``"keyword"``.
     """
@@ -247,15 +260,16 @@ def search_with_scores(
         elif method == "vector":
             ranked = vector
         else:
-            # A chunk sharing no word with the question has no keyword evidence;
-            # its place in that list is document order, i.e. noise. Leave it out.
             # Keywords only re-order meaning's top RERANK_DEPTH: they can promote
             # an exact match (a price, "cena comunitaria") but never push a chunk
             # out of what ANSWER reads, nor pull in one meaning did not pick.
-            # A chunk sharing no word with the question has no keyword evidence.
+            # A chunk sharing no word with the question has no keyword evidence;
+            # its place in that list is document order, i.e. noise. Leave it out.
             head = {i for i, _ in vector[:RERANK_DEPTH]}
             matched = [(i, score) for i, score in keyword if score > 0 and i in head]
             ranked = _fuse([vector, matched], [1.0, KEYWORD_WEIGHT], FUSION_K)
+            if method == "rerank":
+                ranked = _rerank(q, corpus, ranked)
 
     results = [(corpus[i], score) for i, score in ranked[:k]]
 
@@ -385,6 +399,60 @@ def _fuse(
     return sorted(fused.items(), key=lambda item: (-item[1], item[0]))  # ties: doc order
 
 
+# ---------------------------------------------------------------------------
+# Re-ranking: a cross-encoder reads question and chunk together
+# ---------------------------------------------------------------------------
+
+
+def _load_reranker(download: bool = False) -> Any:
+    """The cross-encoder, or ``None`` if it is switched off, missing or not installed."""
+    global _reranker
+    if _reranker is None and RERANK_MODEL:
+        if not download and not embedding_model_cached(RERANK_MODEL):
+            return None
+        try:
+            from sentence_transformers import CrossEncoder
+        except ImportError:
+            return None
+        _reranker = CrossEncoder(RERANK_MODEL, max_length=512, local_files_only=not download)
+    return _reranker
+
+
+def _rerank(
+    q: str, corpus: list[Chunk], ranked: list[tuple[int, float]]
+) -> list[tuple[int, float]]:
+    """Re-order the top :data:`RERANK_DEPTH` of ``ranked`` by cross-encoder relevance.
+
+    Meaning search turns question and chunk into one vector each, separately, so
+    two chunks that *look* alike (room types and euro amounts: fees vs merit
+    support) end up side by side. The cross-encoder reads the pair together and
+    can tell them apart. It is slow (~50 ms a chunk on a laptop CPU), so it only
+    sees the five chunks ANSWER will read: which chunks they are never changes,
+    only their order. Each position keeps its old score, so scores still descend.
+    """
+    model = _load_reranker()
+    head = ranked[:RERANK_DEPTH]
+    if model is None or len(head) < 2:
+        return ranked
+    relevance = model.predict([(q, corpus[i].text) for i, _ in head], batch_size=len(head))
+    order = sorted(range(len(head)), key=lambda j: -float(relevance[j]))  # stable on ties
+    return [(head[j][0], head[pos][1]) for pos, j in enumerate(order)] + ranked[RERANK_DEPTH:]
+
+
+def warm(download: bool = True) -> None:
+    """Load the models and the index now, so the first question is not the slow one.
+
+    The first search in a process otherwise spends ~5–10 s loading models. Call
+    this when the bot starts. With ``download`` it also fetches the re-ranker if
+    it is missing (``make warm`` fetches only the embedding model).
+    """
+    build_index(load_corpus())
+    _embed(["warm up"], "query")
+    model = _load_reranker(download=download)
+    if model is not None:
+        model.predict([("warm", "up")])
+
+
 def _visible(chunk: Chunk, tier: Tier) -> bool:
     """May a caller at ``tier`` see ``chunk``? A chunk with a broken tier label is hidden."""
     try:
@@ -398,6 +466,7 @@ __all__ = [
     "search_with_scores",
     "load_corpus",
     "build_index",
+    "warm",
     "OWNER",
     "INTERFACE",
     "STATUS",
