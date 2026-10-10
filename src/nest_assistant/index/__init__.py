@@ -36,7 +36,13 @@ import unicodedata
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Any, Literal
 
-from ..config import CHUNKS_PATH, DEFAULT_K, EMBEDDING_MODEL, INDEX_DIR, embedding_model_cached
+from ..config import (
+    CHUNKS_PATH,
+    DEFAULT_K,
+    EMBEDDING_MODEL,
+    INDEX_DIR,
+    embedding_model_cached,
+)
 from ..ingest import build_chunks
 from ..schema import Chunk, Tier, tier_allows, tier_rank
 from ..storage import read_chunks
@@ -247,12 +253,11 @@ def search_with_scores(
         elif method == "vector":
             ranked = vector
         else:
-            # A chunk sharing no word with the question has no keyword evidence;
-            # its place in that list is document order, i.e. noise. Leave it out.
             # Keywords only re-order meaning's top RERANK_DEPTH: they can promote
             # an exact match (a price, "cena comunitaria") but never push a chunk
             # out of what ANSWER reads, nor pull in one meaning did not pick.
-            # A chunk sharing no word with the question has no keyword evidence.
+            # A chunk sharing no word with the question has no keyword evidence;
+            # its place in that list is document order, i.e. noise. Leave it out.
             head = {i for i, _ in vector[:RERANK_DEPTH]}
             matched = [(i, score) for i, score in keyword if score > 0 and i in head]
             ranked = _fuse([vector, matched], [1.0, KEYWORD_WEIGHT], FUSION_K)
@@ -385,6 +390,17 @@ def _fuse(
     return sorted(fused.items(), key=lambda item: (-item[1], item[0]))  # ties: doc order
 
 
+def warm() -> None:
+    """Load the embedding model and the index now, so the first question is not slow.
+
+    The first search in a process otherwise spends several seconds loading the
+    model. Call this when the bot starts. It downloads nothing: ``make warm``
+    does that.
+    """
+    build_index(load_corpus())
+    _embed(["warm up"], "query")
+
+
 def _visible(chunk: Chunk, tier: Tier) -> bool:
     """May a caller at ``tier`` see ``chunk``? A chunk with a broken tier label is hidden."""
     try:
@@ -398,6 +414,7 @@ __all__ = [
     "search_with_scores",
     "load_corpus",
     "build_index",
+    "warm",
     "OWNER",
     "INTERFACE",
     "STATUS",

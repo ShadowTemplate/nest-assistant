@@ -106,14 +106,15 @@ do not support is the hard part of judging, and the judge runs only during
 March's scorecards are only comparable if the same judge graded both — changing
 the judge changes the ruler, not the system."""
 
-EMBEDDING_MODEL = os.environ.get("NEST_EMBEDDING_MODEL", "intfloat/multilingual-e5-small")
+EMBEDDING_MODEL = os.environ.get("NEST_EMBEDDING_MODEL", "intfloat/multilingual-e5-base")
 """TEAM 2's choice: multilingual, trained on short question → answering passage.
 
-Measured against the starting model (paraphrase-multilingual-MiniLM-L12-v2) and
-an English-first one (all-MiniLM-L6-v2): the right chunk ranked first went from
-53% to 65% on the real documents and from 53% to 93% on the fixtures, while the
-English-first model managed 29% and 40%. Numbers and method in docs/INDEX.md.
-E5 models need ``"query: "`` / ``"passage: "`` prefixes — ``index`` adds them.
+e5-small beat the starting model (paraphrase-multilingual-MiniLM-L12-v2) and an
+English-first one; e5-base (1.1 GB, ~26 ms a question on a laptop CPU) then beat
+e5-small on Team 1's real chunks: right chunk first 50% → 61%, in the top 5
+89% → 94%, with the hybrid search in ``index``. Numbers and method in
+docs/INDEX.md. E5 models need ``"query: "`` / ``"passage: "`` prefixes —
+``index`` adds them.
 """
 
 
