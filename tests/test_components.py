@@ -300,3 +300,17 @@ def test_eval_runs_and_produces_a_scorecard():
     assert 0.0 <= scorecard.retrieval_hit_rate <= 1.0
     assert 0.0 <= scorecard.answer_correctness <= 1.0
     assert scorecard.tier_leaks >= 0
+
+
+def test_answer_footer_shows_confidence_and_privilege(monkeypatch: pytest.MonkeyPatch):
+    chunks = [
+        Chunk("a#1", "La singola costa 600 euro.", "a.md", "public", "it"),
+        Chunk("b#1", "Orari di silenzio dalle 23.", "b.md", "resident", "it"),
+    ]
+    monkeypatch.setattr(
+        answer_mod.llm, "complete", lambda *a, **k: "Costa 600 euro [a#1]. Silenzio dalle 23 [b#1]."
+    )
+    result = answer_mod.generate("domanda", chunks, "it")
+    assert result.confidence == 0.95
+    assert result.text.endswith("Affidabilità: 95% · Livello: residente_")
+    assert "[a#1]" not in result.text
