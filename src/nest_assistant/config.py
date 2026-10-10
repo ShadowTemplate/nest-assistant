@@ -96,14 +96,6 @@ docs/INDEX.md. E5 models need ``"query: "`` / ``"passage: "`` prefixes —
 """
 
 
-RERANK_MODEL = os.environ.get("NEST_RERANK_MODEL", "cross-encoder/mmarco-mMiniLMv2-L12-H384-v1")
-"""TEAM 2: a multilingual cross-encoder that reads question and chunk together
-and re-orders the search's top five. It tells "how much does a single room
-cost" from "how much merit support per room", which one-vector-per-text models
-confuse. Empty (``NEST_RERANK_MODEL=``) switches it off. If it is not
-downloaded, search simply skips it; ``index.warm()`` downloads it."""
-
-
 def embedding_model_cached(model: str | None = None) -> bool:
     """True if the embedding model is already in the local Hugging Face cache.
 

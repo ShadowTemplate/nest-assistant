@@ -12,8 +12,7 @@ question + tier
    ├─ 1. drop every chunk this tier may not see        (never scored, never returned)
    ├─ 2. meaning: cosine similarity to the question    ("query: " + question)
    ├─ 3. keywords: BM25 re-orders meaning's top 5       (exact words and numbers rise)
-   ├─ 4. re-ranker: reads question + each of those 5    (tells "cost" from "support")
-   └─ 5. return the best k, highest first               (ties keep document order)
+   └─ 4. return the best k, highest first               (ties keep document order)
 ```
 
 Chunk vectors are computed once and saved in `build/index/` (`embeddings.npy`,
@@ -24,9 +23,10 @@ from disk in under a millisecond. The saved index holds only vectors and ids,
 never text or tiers: tiers always come from the live corpus, so a stale index
 cannot hand anyone an out-of-date permission.
 
-Speed on a laptop CPU: 40–110 ms per question. **The first question after a
-process starts takes ~18 s** (loading two models). `index.warm()` does that work
-up front (~10 s); **the bot should call it at startup** so no resident waits.
+Speed on a laptop CPU: about 30 ms per question. **The first question after a
+process starts takes ~5 s** (loading the model). `index.warm()` does that work up
+front; **the bot should call it at startup** so no resident waits. It downloads
+nothing.
 
 ## W1-2.1 · Which embedding model, and why Italian matters
 
@@ -94,8 +94,8 @@ free idea first, then a bigger model. Both inside INDEX; no other team's code.
   camera 120?"* 8th → 1st, *"Come segnalo un guasto?"* 4th → 1st) and worse on
   three; the hybrid's keywords bring two of those (single and triple room
   prices) back from 5th to 3rd.
-- Larger models (e5-large, bge-m3, 2.2 GB+) and cross-encoder re-rankers were
-  not tested: CPU only, and the 1-second budget. Next candidates if a GPU arrives.
+- Larger models (e5-large, bge-m3, 2.2 GB+) were not tested: CPU only, and the
+  1-second budget. A cross-encoder re-ranker was tested and not shipped (below).
 
 Caveats, written down so nobody over-reads the table:
 
@@ -293,52 +293,38 @@ uv run python tools/retrieval_report.py --html     # draws every saved run
 Both write under `build/` (gitignored): the report quotes chunk ids and, on
 `data/`, describes Nest's documents.
 
-## Re-ranking: telling look-alike chunks apart
+## Tried, not shipped: a cross-encoder re-ranker
 
 After e5-base, Team 1's chunks still had the right chunk first only 61% of the
 time. We looked at every miss before trying anything else:
 
 | Cause | Questions | Fix |
 |---|---|---|
-| Two chunks look alike to a one-vector model: *fees* (`6. RETTA`) and *merit support* (`7. SOSTEGNO AL MERITO`) both list room types and euro amounts | single / double / triple room price | **a re-ranker (below)** |
+| Two chunks look alike to a one-vector model: *fees* (`6. RETTA`) and *merit support* (`7. SOSTEGNO AL MERITO`) both list room types and euro amounts | single / double / triple room price | open: a re-ranker was tried (below) |
 | The fact exists only in the English brochure | deposit | data: put it in the Italian documents |
 | The automatic "right chunk" label is blunt (contains a word ≠ answers the question) | breakdown report, online interview | TEAM 5: a hand-checked question set |
 | A superseded document competes with the current one | training weekend, prices | TEAM 1: drop the *Proposta* brochure from the manifest |
 
-**The re-ranker** (`RERANK_MODEL` in `config.py`:
-`cross-encoder/mmarco-mMiniLMv2-L12-H384-v1`, multilingual, 470 MB) reads the
-question and a chunk *together* and scores whether that chunk answers it. Too
-slow for the whole corpus on a CPU, so it re-orders only the top five that
-ANSWER reads; which five never changes. If it is not downloaded, search skips it.
+**What-if for TEAM 1, measured on the shipped search (e5-base hybrid):** with the
+superseded *Proposta* brochure left out of the corpus, right chunk first goes
+61% → 67% and right document first 89% → 94%. Removing it is TEAM 1's call.
 
-| Right chunk 1st / top 3 / top 5 / MRR | hybrid (e5-base) | **+ re-ranker** | worst time/question |
-|---|---|---|---|
-| Team 1 chunks | 61% / 89% / 94% / 0.74 | **72% / 94% / 94% / 0.83** | 641 ms |
-| Scratch chunks (dev) | 65% / 82% / 94% / 0.75 | **76% / 94% / 94% / 0.85** | 297 ms |
-| Fixtures (dev) | 93% / 100% / 100% / 0.96 | **100% / 100% / 100% / 1.00** | 261 ms |
+**What we tried.** A multilingual cross-encoder
+(`cross-encoder/mmarco-mMiniLMv2-L12-H384-v1`, 470 MB) that reads the question and
+a chunk *together*, used to re-order the top five. On the 18 questions every
+choice had been made on, it looked good:
 
-Re-ranking 8 or 10 candidates was slower *and* worse on every corpus (more
-chances to promote a wrong chunk), so five it is; reading 256 instead of 512
-tokens changed nothing. This passes the rule set in advance on all three
-corpora. `make eval` retrieval hit rate stays 94%; tier leaks 0.
+| Original questions: right chunk 1st / top 3 / MRR | e5-base hybrid | + re-ranker |
+|---|---|---|
+| Team 1 chunks | 61% / 89% / 0.74 | 72% / 94% / 0.83 |
+| Scratch chunks | 65% / 82% / 0.75 | 76% / 94% / 0.85 |
+| Fixtures | 93% / 100% / 0.96 | 100% / 100% / 1.00 |
 
-**What it trades.** It removes the merit-support chunk from first place, but on
-four questions it now promotes the superseded *Proposta* brochure instead, so
-"right document first" drops from 89% to 78% even as "right chunk first" rises.
-**What-if, measured:** with the *Proposta* brochure left out of the corpus, the
-re-ranker gets the right chunk first **83%** of the time (right document first
-89%). Removing it is TEAM 1's call; this is the evidence.
+**Why it is not shipped: the fresh-question check.** When TEAM 5 added 32 public
+questions (PR #7), we re-measured on those alone: questions that played no part
+in any choice.
 
-Bigger re-rankers (bge-reranker-v2-m3, 2.3 GB) were not tried: on a laptop CPU
-the small one already uses most of the one-second budget.
-
-### The fresh-question check (read this before trusting the table above)
-
-Every choice in this document was made on the same 15–18 questions. When TEAM 5
-added 32 public questions (PR #7), we re-measured on those alone: questions that
-played no part in any choice.
-
-| Never-seen questions: right chunk 1st / top 5 / MRR | e5-small hybrid | e5-base hybrid | e5-base + re-ranker |
+| Never-seen questions: right chunk 1st / top 5 / MRR | e5-small hybrid | **e5-base hybrid (shipped)** | e5-base + re-ranker |
 |---|---|---|---|
 | Real documents, Team 1 chunks (23 q)* | 43% / 70% / 0.56 | **57% / 78% / 0.66** | 35% / 78% / 0.57 |
 | Fixtures (31 q) | **90% / 97% / 0.93** | 87% / 94% / 0.91 | 77% / 94% / 0.84 |
@@ -352,13 +338,19 @@ fact appears in more than five chunks left out). Looser than a hand-checked set.
 - **The re-ranker does not:** on never-seen questions it is *worse* in first place
   on both corpora. The failures are real, not label noise: *"C'è l'aria
   condizionata?"* and *"C'è un parcheggio?"* put the deposit paragraph and the
-  admissions heading first, pushing the list of included services to 5th. Short
-  yes/no questions answered by a bullet list seem to defeat it. Its gains on the
-  original 18 questions were partly a fit to those questions.
-- **Decision:** the team chose to ship the re-ranker on anyway. It never changes
-  *which* five chunks ANSWER reads, only their order. **Revisit it first** when
-  TEAM 5's hand-checked set exists; switching it off is one setting
-  (`NEST_RERANK_MODEL=` in `.env`).
+  admissions heading first, pushing the list of included services to 5th. Its
+  gains on the original 18 questions were partly a fit to those questions.
+- It would also have cost 470 MB per laptop and made the first question ~18 s.
+
+**A correction.** The first version of PR #14 described the re-ranker as shipped,
+but `search()` still called the hybrid ranking: only `search_with_scores`'s
+default had changed, and the pipeline calls `search()`. The review caught it.
+The re-ranker has been removed, and `test_search_uses_the_hybrid_ranking` now
+checks which ranking `search()` actually calls, not just its output.
+
+**For later.** The look-alike problem is real. Worth re-testing with a stronger
+re-ranker once there is a GPU and TEAM 5's hand-checked question set, judged on
+never-seen questions from the start.
 
 **For TEAM 5:** add the real PDF names to `expected_sources` for q031–q062 (or tag
 them `corpus: fixtures`). As they stand, `make eval` on `data/` counts them as

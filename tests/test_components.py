@@ -131,7 +131,7 @@ def test_without_a_model_search_ranks_by_keywords(tmp_path: Path, monkeypatch: p
     reason="embedding model not downloaded — run `make warm`",
 )
 def test_hybrid_only_reorders_what_meaning_picked(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
-    """Keywords and the re-ranker may sharpen the order of meaning's top 5, never its contents."""
+    """Keywords may sharpen the order of meaning's top 5, never change which chunks they are."""
     corpus = [
         Chunk(f"c#{n}", text, "x.md", "public", "it")
         for n, text in enumerate(
@@ -153,12 +153,28 @@ def test_hybrid_only_reorders_what_meaning_picked(tmp_path: Path, monkeypatch: p
         assert hybrid == vector
 
 
-def test_search_works_without_the_reranker(monkeypatch: pytest.MonkeyPatch):
-    """Not downloaded or switched off: search quietly returns the hybrid order."""
-    monkeypatch.setattr(index, "_load_reranker", lambda download=False: None)
+@pytest.mark.skipif(
+    not embedding_model_cached(),
+    reason="embedding model not downloaded — run `make warm`",
+)
+def test_search_uses_the_hybrid_ranking(monkeypatch: pytest.MonkeyPatch):
+    """search() is what the pipeline calls: it must rank with keywords fused into meaning.
+
+    Checks the call, not just the output, so a docstring and the code cannot
+    drift apart again (PR #14 review).
+    """
+    calls = []
+    real_fuse = index._fuse
+
+    def spy(*args: object, **kwargs: object) -> object:
+        calls.append(1)
+        return real_fuse(*args, **kwargs)  # type: ignore[arg-type]
+
+    monkeypatch.setattr(index, "_fuse", spy)
     question = "quanto costa una camera singola?"
-    hybrid = [c.id for c, _ in index.search_with_scores(question, "staff", 10, "hybrid")]
-    assert [c.id for c in index.search(question, "staff", k=10)] == hybrid
+    results = [c.id for c in index.search(question, "staff", k=5)]
+    assert calls, "search() did not fuse keywords into the meaning ranking"
+    assert results == [c.id for c, _ in index.search_with_scores(question, "staff", 5, "hybrid")]
 
 
 def test_public_never_sees_private():
