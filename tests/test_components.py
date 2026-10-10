@@ -335,6 +335,6 @@ def test_answer_footer_shows_confidence_and_privilege(monkeypatch: pytest.Monkey
         answer_mod.llm, "complete", lambda *a, **k: "Costa 600 euro [a#1]. Silenzio dalle 23 [b#1]."
     )
     result = answer_mod.generate("domanda", chunks, "it")
-    assert result.confidence == 0.95
-    assert result.text.endswith("Affidabilità: 95% · Livello: residente__")
+    assert result.confidence == 0.8  # two documents: CONFIDENCE_CORROBORATED
+    assert result.text.endswith("Affidabilità: 80% · Livello: residente__")
     assert "[a#1]" not in result.text
