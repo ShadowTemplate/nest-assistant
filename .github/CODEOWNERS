@@ -1,0 +1,5 @@
+# Every change to main needs an approving review from Gianvito or team 6
+# (PLATFORM & PM). Enforced by the "require review from code owners" rule on
+# main. Downstream-team reviews (docs/CONTRIBUTING.md) still happen, but only
+# an approval from someone listed here unlocks the merge.
+*   @ShadowTemplate @GioBigno @alepesa
