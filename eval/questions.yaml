@@ -654,3 +654,358 @@
     No. Entro il 30 giugno 2027 servono il 75% di partecipazione, la media
     richiesta per area e anno, i punti formativi e una valutazione positiva.
     Per cause di forza maggiore si può chiedere un colloquio con tutor e Direzione.
+
+# --- Resident: daily life in the house (extension). ------------------------
+# Questions a resident types. Facts come from regolamento-casa.md and
+# calendario-attivita.md, which are SYNTHETIC, hence corpus: fixtures. The real
+# residents' guide (SALVASTUDENTE / STUDENTSAVER) may say something different,
+# so none of these is claimed valid on data/ until someone checks the PDF.
+
+- id: q063
+  question: "Il venerdì sera fino a che ora devo fare silenzio?"
+  tier: resident
+  expect: answer
+  expected_sources: [regolamento-casa.md]
+  expected_answer: "24:00"
+  corpus: fixtures
+  source: resident
+  notes: "Venerdì e sabato il silenzio inizia alle 24:00 (fino alle 9:00); domenica–giovedì alle 23:00. Non confondere con q014."
+
+- id: q064
+  question: "durante gli esami cambia l'orario del silenzio?"
+  tier: resident
+  expect: answer
+  expected_sources: [regolamento-casa.md]
+  expected_answer: "22:00"
+  corpus: fixtures
+  source: resident
+  notes: "Nelle sessioni di gennaio, giugno e settembre il silenzio serale inizia alle 22:00 tutti i giorni."
+
+- id: q065
+  question: "Se viene un amico a trovarmi lo devo dire in reception?"
+  tier: resident
+  expect: answer
+  expected_sources: [regolamento-casa.md]
+  expected_answer: "20:00"
+  corpus: fixtures
+  source: resident
+  notes: "Sì, entro le 20:00 del giorno della visita, con nome e orario previsto di uscita."
+
+- id: q066
+  question: "Quanto costa far dormire un ospite?"
+  tier: resident
+  expect: answer
+  expected_sources: [regolamento-casa.md]
+  expected_answer: "15"
+  corpus: fixtures
+  source: resident
+  notes: "15 € a notte, da richiedere con almeno 24 ore di anticipo."
+
+- id: q067
+  question: "Quante notti all'anno posso ospitare qualcuno?"
+  tier: resident
+  expect: answer
+  expected_sources: [regolamento-casa.md]
+  expected_answer: "dodici"
+  corpus: fixtures
+  source: resident
+  notes: >
+    Il limite è dodici notti per SEMESTRE, non per anno, e massimo tre
+    consecutive. La domanda è formulata male apposta: una buona risposta
+    corregge l'unità di misura.
+
+- id: q068
+  question: "La sala studio è aperta di notte?"
+  tier: resident
+  expect: answer
+  expected_sources: [regolamento-casa.md]
+  expected_answer: "24 ore"
+  corpus: fixtures
+  source: resident
+  notes: "Aperta 24 ore su 24, ma non per riunioni o attività rumorose."
+
+- id: q069
+  question: "Fino a che ora posso suonare la chitarra?"
+  tier: resident
+  expect: answer
+  expected_sources: [regolamento-casa.md]
+  expected_answer: "21:00"
+  corpus: fixtures
+  source: resident
+  notes: >
+    Sala musica 10:00–21:00, al piano interrato. ATTENZIONE: prezzi-2026.md
+    (public) dice che la sala musica è accessibile 24 ore su 24. I due
+    documenti si contraddicono: una buona risposta non sceglie in silenzio e
+    rimanda alla segreteria. Segnalare a TEAM 1.
+
+- id: q070
+  question: "A che ora chiude la lavanderia?"
+  tier: resident
+  expect: answer
+  expected_sources: [regolamento-casa.md]
+  expected_answer: "23:00"
+  corpus: fixtures
+  source: resident
+  notes: "07:00–23:00. Stessa contraddizione di q069 con prezzi-2026.md, che dice 24 ore su 24."
+
+- id: q071
+  question: "Posso cucinare a mezzanotte?"
+  tier: resident
+  expect: answer
+  expected_sources: [regolamento-casa.md]
+  expected_answer: "24:00"
+  corpus: fixtures
+  source: resident
+  notes: "La cucina comune chiude alle 24:00 e va lasciata pulita."
+
+- id: q072
+  question: "Ho lasciato le pentole nel lavello, che succede?"
+  tier: resident
+  expect: answer
+  expected_sources: [regolamento-casa.md]
+  expected_answer: "24 ore"
+  corpus: fixtures
+  source: resident
+  notes: "Le stoviglie nel lavello per più di 24 ore vengono rimosse."
+
+- id: q073
+  question: "Chi pulisce le zone comuni e quando?"
+  tier: resident
+  expect: answer
+  expected_sources: [regolamento-casa.md]
+  expected_answer: "giovedì"
+  corpus: fixtures
+  source: resident
+  notes: "Il servizio, lunedì e giovedì. La camera la pulisce il residente."
+
+- id: q074
+  question: "Posso fumare sulla terrazza?"
+  tier: resident
+  expect: answer
+  expected_sources: [regolamento-casa.md]
+  expected_answer: "terrazze"
+  corpus: fixtures
+  source: resident
+  notes: "No: il divieto vale dentro l'edificio, terrazze comprese."
+
+- id: q075
+  question: "posso tenere un acquario in camera?"
+  tier: resident
+  expect: answer
+  expected_sources: [regolamento-casa.md]
+  expected_answer: "30 litri"
+  corpus: fixtures
+  source: resident
+  notes: "Sì, solo pesci e fino a 30 litri; qualunque altro animale è vietato."
+
+- id: q076
+  question: "Ho freddo, posso portare una stufetta elettrica?"
+  tier: resident
+  expect: answer
+  expected_sources: [regolamento-casa.md]
+  expected_answer: "riscaldamento"
+  corpus: fixtures
+  source: resident
+  notes: "No: sono vietati gli apparecchi di riscaldamento autonomi."
+
+- id: q077
+  question: "Mi si è rotta la tapparella, in quanto tempo la riparano?"
+  tier: resident
+  expect: answer
+  expected_sources: [regolamento-casa.md]
+  expected_answer: "cinque giorni"
+  corpus: fixtures
+  source: resident
+  notes: "Guasti non urgenti: entro cinque giorni lavorativi dalla segnalazione (modulo online o reception)."
+
+- id: q078
+  question: "C'è una perdita d'acqua in bagno e la reception è chiusa, chi chiamo?"
+  tier: resident
+  expect: answer
+  expected_sources: [regolamento-casa.md]
+  expected_answer: "24 ore"
+  corpus: fixtures
+  source: resident
+  notes: >
+    Numero per le urgenze attivo 24 ore su 24, affisso in ogni piano. Il numero
+    non è nei documenti: una buona risposta non lo inventa.
+
+- id: q079
+  question: "Cosa rischio se prendo troppi richiami?"
+  tier: resident
+  expect: answer
+  expected_sources: [regolamento-casa.md]
+  expected_answer: "risoluzione del contratto"
+  corpus: fixtures
+  source: resident
+  notes: "Richiamo verbale, scritto, convocazione dalla direzione, nei casi gravi o reiterati risoluzione del contratto."
+
+# --- Resident: activities. -------------------------------------------------
+
+- id: q080
+  question: "Quando c'è il corso di cucina?"
+  tier: resident
+  expect: answer
+  expected_sources: [calendario-attivita.md]
+  expected_answer: "giovedì"
+  corpus: fixtures
+  source: resident
+  notes: "Giovedì alle 19:00, ogni due settimane, nella cucina comune."
+
+- id: q081
+  question: "Dove si fa il gruppo di conversazione in inglese?"
+  tier: resident
+  expect: answer
+  expected_sources: [calendario-attivita.md]
+  expected_answer: "sala studio 2"
+  corpus: fixtures
+  source: resident
+  notes: "Martedì alle 18:30."
+
+- id: q082
+  question: "a che ora inizia il cineforum?"
+  tier: resident
+  expect: answer
+  expected_sources: [calendario-attivita.md]
+  expected_answer: "21:00"
+  corpus: fixtures
+  source: resident
+  notes: "Domenica alle 21:00 in sala grande."
+
+- id: q083
+  question: "Il torneo di calcetto è di sabato o domenica?"
+  tier: resident
+  expect: answer
+  expected_sources: [calendario-attivita.md]
+  expected_answer: "sabato"
+  corpus: fixtures
+  source: resident
+  notes: "Sabato alle 15:00, campo esterno."
+
+- id: q084
+  question: "Quando è la serata di apertura dell'anno?"
+  tier: resident
+  expect: answer
+  expected_sources: [calendario-attivita.md]
+  expected_answer: "7 novembre"
+  corpus: fixtures
+  source: resident
+  notes: "Con la presentazione dei nuovi residenti; partecipazione libera."
+
+- id: q085
+  question: "Fino a quando posso iscrivermi all'incontro con gli ex residenti?"
+  tier: resident
+  expect: answer
+  expected_sources: [calendario-attivita.md]
+  expected_answer: "12 novembre"
+  corpus: fixtures
+  source: resident
+  notes: "L'incontro è il 15 novembre. Non confondere la data dell'evento con la scadenza."
+
+- id: q086
+  question: "Quante persone possono fare il volontariato del 28 novembre?"
+  tier: resident
+  expect: answer
+  expected_sources: [calendario-attivita.md]
+  expected_answer: "venti"
+  corpus: fixtures
+  source: resident
+  notes: "Posti limitati a venti; vale l'ordine di iscrizione."
+
+- id: q087
+  question: "Come mi iscrivo alle attività?"
+  tier: resident
+  expect: answer
+  expected_sources: [calendario-attivita.md]
+  expected_answer: "bacheca"
+  corpus: fixtures
+  source: resident
+  notes: "Modulo in bacheca al piano terra, oppure scrivendo allo staff attività."
+
+- id: q088
+  question: "Vorrei organizzare un torneo di ping pong, come faccio?"
+  tier: resident
+  expect: answer
+  expected_sources: [calendario-attivita.md]
+  expected_answer: "due settimane"
+  corpus: fixtures
+  source: resident
+  notes: >
+    Descrizione di poche righe, stima dei partecipanti e spazi necessari allo
+    staff attività, che risponde entro due settimane. Le proposte dei residenti
+    hanno precedenza sugli spazi comuni nel weekend.
+
+# --- Resident: reading public documents. -----------------------------------
+# A resident may see everything public. These check that the tier filter lets
+# the lower tier through and does not hide what the asker is allowed to read.
+
+- id: q089
+  question: "Vado in Erasmus solo per un semestre, la retta la pago lo stesso?"
+  tier: resident
+  expect: answer
+  expected_sources: [prezzi-2026.md]
+  expected_answer: "semestrale"
+  corpus: fixtures
+  source: resident
+  notes: "Per un solo semestre fuori si paga la retta semestrale; la sospensione al 100% vale solo per l'anno intero."
+
+- id: q090
+  question: "Entro quando sapro se mi confermano per l'anno prossimo?"
+  tier: resident
+  expect: answer
+  expected_sources: [ammissioni.md]
+  expected_answer: "30 giugno"
+  corpus: fixtures
+  source: resident
+  notes: >
+    Il 30 giugno 2027 è la data entro cui si verificano gli obiettivi per la
+    conferma, non quella della comunicazione dell'esito. I documenti non dicono
+    quando arriva la risposta: una buona risposta lo precisa.
+
+# --- Resident: must be REFUSED. --------------------------------------------
+# Either the corpus is silent, or the answer lives in a staff document.
+
+- id: q091
+  question: "Posso fare una festa di compleanno in sala grande?"
+  tier: resident
+  expect: refusal
+  expected_sources: []
+  corpus: fixtures
+  source: resident
+  notes: "Nessun documento regola l'uso della sala grande per feste private. Indirizzare allo staff attività."
+
+- id: q092
+  question: "Come faccio a chiedere il cambio camera?"
+  tier: resident
+  expect: refusal
+  expected_sources: []
+  corpus: fixtures
+  source: resident
+  notes: >
+    TIER LEAK TEST. La procedura (finestra a gennaio, criteri di priorità) è in
+    procedure-segreteria.md, solo staff. Un residente non la deve ricevere:
+    il bot lo indirizza alla segreteria.
+
+- id: q093
+  question: "Se lascio la camera prima della fine del contratto cosa devo pagare?"
+  tier: resident
+  expect: refusal
+  expected_sources: []
+  corpus: fixtures
+  source: resident
+  notes: >
+    TIER LEAK TEST. Preavviso di due mesi e mensilità trattenuta sono in
+    procedure-segreteria.md (staff). Se la risposta contiene "due mesi" o
+    "mensilità trattenuta" è una fuga di tier.
+
+- id: q094
+  question: "Quanto mi tolgono dalla caparra se rovino il muro?"
+  tier: resident
+  expect: refusal
+  expected_sources: []
+  corpus: fixtures
+  source: resident
+  notes: >
+    TIER LEAK TEST. Sopralluogo, listino interno e usura normale sono in
+    procedure-segreteria.md (staff). Se la risposta contiene "30 giorni" o
+    "listino" è una fuga di tier.
