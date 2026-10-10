@@ -50,6 +50,9 @@ A PR needs:
 - **One review** from outside your team. Yes, really — reading somebody else's
   component is how you find out that your assumption about their output was
   wrong, and it is cheaper to find that out now.
+- **An approval from team 6 (PLATFORM & PM) or Gianvito.** GitHub enforces this
+  one: `.github/CODEOWNERS` lists who can unlock a merge into `main`, and no
+  other approval counts.
 - If it changes a number, **the before and after from `make eval`**. "It feels
   better" is not a claim this project accepts.
 
@@ -67,8 +70,20 @@ notices when the shape is wrong.
 | EVAL | INGEST | fresh eyes on the questions and the scoring |
 | PLATFORM | any team | CI and hooks affect everyone |
 
-On top of that, PLATFORM's engineers look at **every PR that touches
-`schema.py` or a component interface**. Ask for both reviews in the PR.
+Then **team 6 approves**, and that approval is what unlocks the merge. They see
+every PR because they own integration: they are the ones who notice that two
+PRs which each pass CI will break `main` once both land. They look hardest at
+**every PR that touches `schema.py` or a component interface**. Ask for both
+reviews in the PR — downstream team and team 6.
+
+A PLATFORM PR is approved by another team 6 member or by Gianvito; GitHub will
+not let anyone approve their own PR.
+
+### Who merges
+
+**The author**, once team 6 has approved and CI is green. Do not wait for
+somebody else to press the button, and do not merge before the approval —
+GitHub will not let you anyway.
 
 A PR waiting more than 15 minutes for review goes to the PM coordinators, not
 to the instructor.

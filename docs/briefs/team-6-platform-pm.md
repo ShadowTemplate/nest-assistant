@@ -46,12 +46,22 @@ it, and the board on the whiteboard matches `make board`.
 `make board` reads `STATUS` from each module, so it cannot lie. Update the
 whiteboard from it at **12:00** and **15:30**, in front of everyone.
 
-**The engineers are the integration owners, all day.** `main` is protected: a
-PR needs one approval and green CI. Each PR is reviewed by the team downstream
-(INGEST → INDEX → ANSWER → CHAT → EVAL → INGEST; PLATFORM by any team; table in
-`docs/CONTRIBUTING.md`). You add a second review on **every PR that touches
-`schema.py` or a component interface**, and you help with merge conflicts
-around lunch, when everyone merges at once.
+**You are the integration owners, all day — and the merge gate.** `main` is
+protected: a PR needs green CI and an approval from **one of you or Gianvito**.
+`.github/CODEOWNERS` lists who that is, and GitHub counts no other approval.
+Each PR is first reviewed by the team downstream (INGEST → INDEX → ANSWER →
+CHAT → EVAL → INGEST; table in `docs/CONTRIBUTING.md`); your approval comes on
+top and is what unlocks the merge. The author then merges.
+
+- **Look hardest at every PR that touches `schema.py` or a component
+  interface.** That is where one team's change costs another team its afternoon.
+- **Watch for PRs that pass CI alone and clash together.** `main` does not
+  require a branch to be up to date before it merges, so you are the check.
+- **Your own PRs** need another team 6 member or Gianvito — nobody can approve
+  their own.
+- **Do not become the bottleneck.** Every PR in the room waits on you. Split the
+  queue between you, and treat the 15-minute rule as applying to yourselves.
+  Help with merge conflicts around lunch, when everyone merges at once.
 
 ## C · Coordination — this is a real job, all day
 
