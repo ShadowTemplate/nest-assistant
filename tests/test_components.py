@@ -177,6 +177,46 @@ def test_search_uses_the_hybrid_ranking(monkeypatch: pytest.MonkeyPatch):
     assert results == [c.id for c, _ in index.search_with_scores(question, "staff", 5, "hybrid")]
 
 
+@pytest.mark.skipif(
+    not embedding_model_cached(),
+    reason="embedding model not downloaded — run `make warm`",
+)
+def test_a_terse_question_still_reaches_its_keyword_match(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    """'singola?' says almost nothing to a vector; the chunk BM25 ranks first must
+    still be among the top 5, and places 1 to 4 must be meaning's own."""
+    corpus = [
+        Chunk(f"filler#{n}", text, "x.md", "public", "it")
+        for n, text in enumerate(
+            [
+                "La palestra apre alle 6 e chiude a mezzanotte.",
+                "Gli ospiti vanno annunciati in reception entro le 20.",
+                "Il bucato si fa al piano terra, gettoni in segreteria.",
+                "La mensa serve il pranzo dalle 12 alle 14.",
+                "Il wifi copre tutte le camere e gli spazi comuni.",
+                "La sala studio è aperta tutta la notte.",
+            ]
+        )
+    ] + [Chunk("prezzi#1", "Retta annuale: singola 10.450 euro.", "p.md", "public", "it")]
+    _tiny_corpus(monkeypatch, tmp_path, corpus)
+    hybrid = [c.id for c in index.search("singola?", "public", k=5)]
+    vector = [c.id for c, _ in index.search_with_scores("singola?", "public", 5, "vector")]
+    keyword = [c.id for c, _ in index.search_with_scores("singola?", "public", 5, "keyword")]
+    assert keyword[0] == "prezzi#1" and "prezzi#1" in hybrid
+    if "prezzi#1" not in vector:  # rescued: it takes place 5, places 1-4 are meaning's
+        assert hybrid[4] == "prezzi#1" and hybrid[:4] == vector[:4]
+
+
+def test_rescue_only_ever_touches_the_last_place():
+    ranked = [(i, 1.0 - i / 10) for i in range(8)]
+    rescued = index._rescue(ranked, [(7, 3.2), (0, 1.1)])
+    assert [i for i, _ in rescued][:4] == [0, 1, 2, 3] and rescued[4][0] == 7
+    assert [s for _, s in rescued] == [s for _, s in ranked]  # scores still descend
+    assert index._rescue(ranked, [(2, 3.2)]) == ranked  # already in the top 5: nothing moves
+    assert index._rescue(ranked, [(7, 0.0)]) == ranked  # no shared word: no evidence
+
+
 def test_public_never_sees_private():
     """A `public` caller must never receive a resident or staff chunk.
 
