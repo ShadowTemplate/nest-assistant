@@ -29,6 +29,9 @@ smaller problem.
 
 from __future__ import annotations
 
+import html
+import re
+
 from ..config import load_dotenv, telegram_bot_token
 from ..identity import resolve
 from ..pipeline import Pipeline
@@ -66,6 +69,18 @@ def format_reply(answer: Answer) -> str:
         sources = ", ".join(answer.citations)
         text += f"\n\n📄 Fonti: {sources}"
     return text
+
+
+_FOOTER_LINE = re.compile(r"^__(.+)__$", re.MULTILINE)
+
+
+def to_telegram_html(text: str) -> str:
+    """Render a reply for Telegram's HTML parse mode.
+
+    Everything is escaped, then ANSWER's ``__footer__`` line becomes italics.
+    Sent as plain text, Telegram would show the underscores literally.
+    """
+    return _FOOTER_LINE.sub(r"<i>\1</i>", html.escape(text, quote=False))
 
 
 def handle_message(text: str, user_id: str, pipeline: Pipeline | None = None) -> str:
@@ -107,6 +122,7 @@ def _build_application(token: str, pipeline: Pipeline):
     import logging
     import time
 
+    from telegram.error import BadRequest
     from telegram.ext import Application, CommandHandler, ContextTypes, MessageHandler, filters
 
     from .access import NOT_ALLOWED_IT, is_allowed
@@ -146,7 +162,10 @@ def _build_application(token: str, pipeline: Pipeline):
             log.exception("handle_message failed")
             error, answer = exc, ERROR_IT
         try:
-            await message.reply_text(answer)
+            try:
+                await message.reply_text(to_telegram_html(answer), parse_mode="HTML")
+            except BadRequest:  # markup rejected: fall back to plain text
+                await message.reply_text(answer)
         except Exception as exc:  # noqa: BLE001 - Telegram refused or timed out
             log.exception("could not send the reply")
             error = error or exc
@@ -216,6 +235,7 @@ __all__ = [
     "run_console",
     "handle_message",
     "format_reply",
+    "to_telegram_html",
     "WELCOME_IT",
     "HELP_IT",
     "OWNER",
