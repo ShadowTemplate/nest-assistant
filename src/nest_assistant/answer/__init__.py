@@ -44,9 +44,18 @@ REFUSAL_MARKER = "NON_TROVATO"
 _CITATION_RE = re.compile(r"\s*\[([^\[\]]+#[^\[\]]+)\]")
 
 _HEDGE_RE = re.compile(
-    r"non (?:\w+ )?(?:dicono|specific\w+|risulta|risultano|indica\w*|precisa\w*)", re.IGNORECASE
+    # Italian: "non specificano", "non è stato possibile trovare", "non sono presenti".
+    # "non solo X ma anche Y" is not a hedge, hence the lookahead.
+    r"\bnon\s+(?!solo\b)(?:\w+\s+){0,3}?"
+    r"(?:dicono|dice|specific\w+|risult\w+|indic\w+|precis\w+|menzion\w+|riport\w+"
+    r"|present\w+|disponibil\w+|trov\w+|possibile)"
+    # English, for lang="en": "the documents do not specify".
+    r"|\b(?:do(?:es)?\s+not|don't|doesn't|not)\s+(?:\w+\s+){0,2}?"
+    r"(?:specify|state|mention|say|provide|indicate|contain|include)",
+    re.IGNORECASE,
 )
-"""The model admits a gap inside an otherwise answered question."""
+"""The model admits a gap inside an otherwise answered question. A heuristic over
+a handful of phrasings, not a language model: it will miss some."""
 
 REFUSAL_IT = (
     "Non ho trovato questa informazione nei documenti di Nest. "
@@ -60,16 +69,25 @@ def estimate_confidence(text: str, cited: list[str], invented: int) -> float:
     """How far to trust a non-refused answer, 0..1. A heuristic, not a probability.
 
     Retrieval scores cannot do this job: with the e5 model every question scores
-    0.76–0.89, answerable or not. What we can see instead: how many distinct
-    chunks back the answer, whether the model cited ids it was never given, and
-    whether it admits a gap in its own text. Never 1.0: nothing here is proof.
+    0.76-0.89, answerable or not. What we can see instead: how many distinct
+    *documents* back the answer, whether the model cited ids it was never given,
+    and whether it admits a gap in its own text.
+
+    The score is ``0.6``, plus ``0.1`` for a second document, minus ``0.2`` for an
+    invented id and ``0.2`` for an admitted gap: it lives in 0.2-0.7, so it is
+    never 1.0 (nothing here is proof) and no clamp is needed. A refusal is 0.0.
+
+    An answer that admits a gap is lowered, not refused: "the price is X; the
+    documents do not say more about meals" is useful to a parent. Whether a
+    partial answer should be a refusal is a product decision, not a scoring one.
     """
-    score = 0.6 + (0.1 if len(cited) >= 2 else 0.0)
+    documents = {cid.rsplit("#", 1)[0] for cid in cited}
+    score = 0.6 + (0.1 if len(documents) >= 2 else 0.0)
     if invented:
         score -= 0.2
     if _HEDGE_RE.search(text):
         score -= 0.2
-    return round(min(0.9, max(0.1, score)), 2)
+    return round(score, 2)
 
 
 def load_system_prompt(lang: str = DEFAULT_LANG) -> str:

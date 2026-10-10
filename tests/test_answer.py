@@ -12,7 +12,13 @@ import pytest
 
 from nest_assistant import answer as answer_mod
 from nest_assistant import llm
-from nest_assistant.answer import REFUSAL_IT, REFUSAL_MARKER, generate
+from nest_assistant.answer import (
+    _HEDGE_RE,
+    REFUSAL_IT,
+    REFUSAL_MARKER,
+    estimate_confidence,
+    generate,
+)
 from nest_assistant.config import PROMPTS_DIR
 from nest_assistant.schema import Chunk
 
@@ -194,40 +200,52 @@ def test_admitting_a_gap_lowers_confidence(monkeypatch):
     assert generate("domanda", CHUNKS, "it").confidence < sure
 
 
-# --- confidence -------------------------------------------------------------
+@pytest.mark.parametrize(
+    ("cited", "invented", "text", "expected"),
+    [
+        (["a.pdf#1"], 0, "Costa 10 euro.", 0.6),
+        (["a.pdf#1", "b.pdf#2"], 0, "Costa 10 euro.", 0.7),
+        (["a.pdf#1", "a.pdf#2"], 0, "Costa 10 euro.", 0.6),  # same document: no bonus
+        (["a.pdf#1"], 1, "Costa 10 euro.", 0.4),
+        (["a.pdf#1"], 0, "Costa 10 euro. I documenti non specificano altro.", 0.4),
+        (["a.pdf#1"], 1, "Costa 10 euro. I documenti non specificano altro.", 0.2),
+        (["a.pdf#1", "b.pdf#2"], 1, "Costa 10 euro. I documenti non dicono altro.", 0.3),
+    ],
+)
+def test_confidence_values(cited, invented, text, expected):
+    assert estimate_confidence(text, cited, invented) == expected
 
 
-def test_confidence_rises_with_a_second_distinct_source(monkeypatch):
-    fake_model(monkeypatch, "Costa 10.450 euro [prezzi.pdf#1].")
-    one = generate("domanda", CHUNKS, "it").confidence
-    fake_model(
-        monkeypatch, "Costa 10.450 euro [prezzi.pdf#1]. Silenzio alle 23 [regolamento.pdf#2]."
-    )
-    two = generate("domanda", CHUNKS, "it").confidence
-    assert two > one
+@pytest.mark.parametrize(
+    "text",
+    [
+        "I documenti non specificano il prezzo.",
+        "Non è stato possibile trovare il dato.",
+        "Non sono presenti dettagli sui pasti.",
+        "Non risultano altre informazioni.",
+        "The documents do not specify the price.",
+        "The document does not mention meals.",
+    ],
+)
+def test_admitted_gaps_are_recognised(text):
+    assert _HEDGE_RE.search(text)
 
 
-def test_confidence_drops_when_the_model_cites_an_id_it_was_not_given(monkeypatch):
-    fake_model(monkeypatch, "Costa 10.450 euro [prezzi.pdf#1].")
-    clean = generate("domanda", CHUNKS, "it").confidence
-    fake_model(monkeypatch, "Costa 10.450 euro [prezzi.pdf#1] [inventato.pdf#9].")
-    dirty = generate("domanda", CHUNKS, "it").confidence
-    assert dirty < clean
+@pytest.mark.parametrize(
+    "text",
+    [
+        "Sono inclusi non solo la colazione ma anche la cena.",
+        "La retta non include il parcheggio, che costa 50 euro.",
+        "Il silenzio inizia alle 23:00.",
+        "Costs 10,450 euros per year.",
+    ],
+)
+def test_ordinary_answers_are_not_read_as_admitted_gaps(text):
+    assert not _HEDGE_RE.search(text)
 
 
-def test_confidence_drops_when_the_answer_admits_a_gap(monkeypatch):
-    fake_model(monkeypatch, "Costa 10.450 euro [prezzi.pdf#1].")
-    sure = generate("domanda", CHUNKS, "it").confidence
-    fake_model(
-        monkeypatch,
-        "Costa 10.450 euro [prezzi.pdf#1]. I documenti non dicono altro sui pasti.",
-    )
-    hedged = generate("domanda", CHUNKS, "it").confidence
-    assert hedged < sure
-
-
-def test_confidence_is_never_certain_and_a_refusal_is_zero(monkeypatch):
-    fake_model(monkeypatch, "Sì [prezzi.pdf#1] [regolamento.pdf#2].")
-    assert 0 < generate("domanda", CHUNKS, "it").confidence < 1
-    fake_model(monkeypatch, REFUSAL_MARKER)
-    assert generate("domanda", CHUNKS, "it").confidence == 0.0
+def test_a_hedged_answer_is_lowered_not_refused(monkeypatch):
+    fake_model(monkeypatch, "Costa 10 euro [prezzi.pdf#1]. I documenti non dicono altro.")
+    result = generate("domanda", CHUNKS, "it")
+    assert result.refused is False
+    assert result.confidence == 0.4

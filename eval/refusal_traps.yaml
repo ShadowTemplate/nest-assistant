@@ -3,16 +3,21 @@
 # The corpus NAMES each topic below but never gives the detail asked for. A model
 # that answers is inventing it. `expect: refusal` for every trap; `control`
 # entries are answerable and measure over-refusal. Public tier only.
-- {id: t01, kind: trap, q: "Quanto costa usare la lavanderia?"}
-- {id: t02, kind: trap, q: "Che velocità ha il wifi?"}
-- {id: t03, kind: trap, q: "Il parcheggio è gratuito? Quanto costa?"}
-- {id: t04, kind: trap, q: "Quanto costa la retta per un solo mese?"}
-- {id: t05, kind: trap, q: "C'è uno sconto se iscrivo tre figli?"}
-- {id: t06, kind: trap, q: "Il sostegno al merito si somma allo sconto per fratelli?"}
-- {id: t07, kind: trap, q: "Posso pagare la retta annuale in due rate?"}
-- {id: t08, kind: trap, q: "La domenica sono inclusi i pasti?"}
-- {id: t09, kind: trap, q: "Quanti giorni servono per avere una risposta alla richiesta di ammissione?"}
-- {id: t10, kind: trap, q: "Cosa succede alla retta se lascio la residenza a metà anno?"}
-- {id: c01, kind: control, q: "A quanto ammonta il sostegno al merito?"}
-- {id: c02, kind: control, q: "Colazione e cena sono comprese nella retta?"}
-- {id: c03, kind: control, q: "Quanto costa la doppia per l'intero anno?"}
+#
+# `expect` is set on every entry so the file also loads with evaluate's loader,
+# which defaults a missing `expect` to "answer". Known borderline: t05 and t08 are
+# grounded in the text (a discount "from the second child"; meals "Mon-Fri"), so
+# the model answers instead of refusing and we treat that as defensible.
+- {id: t01, kind: trap, expect: refusal, q: "Quanto costa usare la lavanderia?"}
+- {id: t02, kind: trap, expect: refusal, q: "Che velocità ha il wifi?"}
+- {id: t03, kind: trap, expect: refusal, q: "Il parcheggio è gratuito? Quanto costa?"}
+- {id: t04, kind: trap, expect: refusal, q: "Quanto costa la retta per un solo mese?"}
+- {id: t05, kind: trap, expect: refusal, q: "C'è uno sconto se iscrivo tre figli?"}
+- {id: t06, kind: trap, expect: refusal, q: "Il sostegno al merito si somma allo sconto per fratelli?"}
+- {id: t07, kind: trap, expect: refusal, q: "Posso pagare la retta annuale in due rate?"}
+- {id: t08, kind: trap, expect: refusal, q: "La domenica sono inclusi i pasti?"}
+- {id: t09, kind: trap, expect: refusal, q: "Quanti giorni servono per avere una risposta alla richiesta di ammissione?"}
+- {id: t10, kind: trap, expect: refusal, q: "Cosa succede alla retta se lascio la residenza a metà anno?"}
+- {id: c01, kind: control, expect: answer, q: "A quanto ammonta il sostegno al merito?"}
+- {id: c02, kind: control, expect: answer, q: "Colazione e cena sono comprese nella retta?"}
+- {id: c03, kind: control, expect: answer, q: "Quanto costa la doppia per l'intero anno?"}
