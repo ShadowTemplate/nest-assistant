@@ -114,15 +114,7 @@ def test_question_detection_needs_caps_and_a_question_mark():
     assert not ingest._is_question("COME FUNZIONA LA LAVANDERIA")
 
 
-def test_each_question_starts_its_own_chunk(tmp_path: Path):
-    (tmp_path / "manifest.yaml").write_text(
-        "documents:\n  - {filename: guida.md, lang: it, tier: resident}\n", encoding="utf-8"
-    )
-    (tmp_path / "guida.md").write_text(
-        "# Guida\n\nA LAVANDERIA APRE?\nTutti i giorni dalle otto.\n"
-        "B COME SI PAGA?\nAl banco, in contanti.\n",
-        encoding="utf-8",
-    )
+def test_each_question_starts_its_own_unit():
     sections = ingest._sections(
         ["A LAVANDERIA APRE?", "Tutti i giorni.", "B COME SI PAGA?", "Al banco."]
     )
@@ -252,3 +244,127 @@ def test_pdf_path_end_to_end(tmp_path: Path):
     assert "HOUSE" not in text  # label page dropped
     assert "10.450" in text
     assert [c.id for c in chunks] == [f"bando.pdf#{i}" for i in range(1, len(chunks) + 1)]
+
+
+# ---------------------------------------------------------------------------
+# Review round 2
+# ---------------------------------------------------------------------------
+def test_values_in_a_pdf_table_are_not_taken_for_page_numbers():
+    page = "Retta\nSingola\n450\nDoppia\n320\nStudio\n610"
+    cleaned = ingest._clean_pages([(page, "")], "listino.pdf", pdf=True)
+    assert cleaned == [["Retta", "Singola", "450", "Doppia", "320", "Studio", "610"]]
+
+
+def test_page_number_at_the_edge_of_a_pdf_page_is_removed():
+    pages = [("Testo uno\n1", ""), ("2\nTesto due", ""), ("Testo tre\npag. 3 di 9", "")]
+    cleaned = ingest._clean_pages(pages, "x.pdf", pdf=True)
+    assert cleaned == [["Testo uno"], ["Testo due"], ["Testo tre"]]
+
+
+def test_a_short_page_of_sentences_is_not_a_label_page():
+    assert not ingest._is_label_page(
+        ["Il silenzio è richiesto di notte.", "Gli ospiti vanno annunciati."]
+    )
+    assert ingest._is_label_page(["NEST", "2026-2027"])
+
+
+@pytest.mark.parametrize(
+    "unit",
+    [
+        "x" * 3000,  # no separator at all
+        "\n".join(["riga " + "y" * 60] * 40),  # lines
+        "parola " * 400,  # one sentence longer than MAX_CHARS
+        " ".join(["Frase di prova numero uno."] * 80),
+    ],
+    ids=["no-separator", "lines", "long-sentence", "sentences"],
+)
+@pytest.mark.parametrize("reserve", [0, 120])
+def test_no_piece_is_longer_than_the_limit(unit: str, reserve: int):
+    pieces = ingest._split_long(unit, reserve)
+    assert pieces
+    assert all(len(p) <= ingest.MAX_CHARS - reserve for p in pieces)
+    assert "".join(pieces).replace(" ", "").replace("\n", "") == unit.replace(" ", "").replace(
+        "\n", ""
+    )
+
+
+def test_split_long_does_not_cut_after_an_abbreviation():
+    # Sized so the chunk would fill up exactly at "Art.": the cut lands there
+    # unless the abbreviation is recognised.
+    unit = (
+        ("Frase uno è lunga abbastanza. " * 28)
+        + "Vedi Art. 5 del bando e delle sue successive modifiche e integrazioni. "
+        + ("Altro testo. " * 40)
+    )
+    assert len(unit) > ingest.MAX_CHARS
+    pieces = ingest._split_long(unit)
+    assert len(pieces) > 1
+    assert not any(p.endswith("Art.") for p in pieces)
+    assert any("Art. 5 del bando" in p for p in pieces)
+
+
+def test_list_items_are_not_sections_but_real_subclauses_are():
+    lines = [
+        "1. REQUISITI",
+        "Per partecipare serve quanto segue, come indicato nel bando di quest anno.",
+        "a. Essere maggiorenni",
+        "b. Essere iscritti",
+        "c. Avere un ISEE valido",
+        "2. OFFERTA",
+        "a. Programma offerto",
+        "Il programma comprende laboratori, seminari e attività di gruppo ogni settimana.",
+    ]
+    titles = [s.title for s in ingest._sections(lines)]
+    assert titles == ["1. REQUISITI", "2. OFFERTA > a. Programma offerto"]
+
+
+def test_join_keeps_the_hyphen_in_compounds():
+    assert ingest._join(["x" * 60 + " il check-", "in avviene alle 15"]).endswith(
+        "check-in avviene alle 15"
+    )
+    assert ingest._join(["il magi-", "strale"]) == "il magistrale"
+
+
+def test_chunk_size_counts_the_section_title(tmp_path: Path):
+    (tmp_path / "manifest.yaml").write_text(
+        "documents:\n  - {filename: a.md, lang: it, tier: public}\n", encoding="utf-8"
+    )
+    title = "T" * 80
+    body = "\n".join(f"- voce numero {i} del regolamento interno, da leggere" for i in range(60))
+    (tmp_path / "a.md").write_text(f"# {title}\n{body}\n", encoding="utf-8")
+    chunks = ingest.build_chunks(tmp_path)
+    assert len(chunks) > 1
+    assert all(len(c.text) <= ingest.TARGET_CHARS for c in chunks)
+
+
+def test_ids_of_one_document_do_not_depend_on_another(corpus: Path):
+    before = {c.id for c in ingest.build_chunks(corpus) if c.source == "interno.txt"}
+    (corpus / "aperto.md").write_text("# Nuovo\n\nTutto cambiato.\n", encoding="utf-8")
+    after = {c.id for c in ingest.build_chunks(corpus) if c.source == "interno.txt"}
+    assert before == after
+
+
+def test_duplicate_lines_keep_their_place_in_layout_order():
+    layout = (
+        "Intestazione lunga\n   Prezzo base annuo\n   Voce ripetuta qui\n"
+        "   Altro testo lungo\n   Voce ripetuta qui\n"
+    )
+    page = ["Intestazione lunga", "Voce ripetuta qui", "Altro testo lungo", "Voce ripetuta qui"]
+    assert ingest._in_layout_order(page, layout) == page
+
+
+def test_docx_tables_are_read_in_order(tmp_path: Path):
+    docx = pytest.importorskip("docx", reason="needs the ingest extra: uv sync --extra ingest")
+    doc = docx.Document()
+    doc.add_paragraph("Listino")
+    table = doc.add_table(rows=2, cols=2)
+    table.cell(0, 0).text, table.cell(0, 1).text = "Singola", "450"
+    table.cell(1, 0).text, table.cell(1, 1).text = "Doppia", "320"
+    doc.add_paragraph("Fine")
+    doc.save(tmp_path / "listino.docx")
+    (tmp_path / "manifest.yaml").write_text(
+        "documents:\n  - {filename: listino.docx, lang: it, tier: public}\n", encoding="utf-8"
+    )
+    text = ingest.build_chunks(tmp_path)[0].text
+    assert text.index("Listino") < text.index("Singola | 450") < text.index("Doppia | 320")
+    assert text.index("Doppia | 320") < text.index("Fine")

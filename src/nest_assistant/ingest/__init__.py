@@ -119,8 +119,20 @@ def _read_pages(path: Path) -> list[tuple[str, str]]:
         ]
     if suffix == ".docx":
         from docx import Document
+        from docx.table import Table
 
-        return [("\n".join(p.text for p in Document(path).paragraphs), "")]
+        lines: list[str] = []
+        for block in Document(path).iter_inner_content():  # paragraphs and tables, in order
+            if isinstance(block, Table):
+                for row in block.rows:
+                    cells: list[str] = []
+                    for cell in row.cells:  # merged cells repeat; keep one
+                        if cell.text.strip() and cell.text.strip() not in cells:
+                            cells.append(cell.text.strip())
+                    lines.append(" | ".join(cells))
+            else:
+                lines.append(block.text)
+        return [("\n".join(lines), "")]
     return [(path.read_text(encoding="utf-8"), "")]
 
 
@@ -130,6 +142,27 @@ def _norm(line: str) -> str:
 
 _NAV = re.compile(r"^<?\s*torna all.indice\s*$", re.I)
 _PAGE_NO = re.compile(r"^(pag(ina|e)?\.?\s*)?\d{1,3}(\s*(/|di|of)\s*\d{1,3})?$", re.I)
+_BARE_NUMBER = re.compile(r"^\d{1,3}$")
+
+
+def _strip_page_number(page: list[str], number: int) -> list[str]:
+    """Drop a page number from the first or last line of a PDF page, and only there.
+
+    A number in the middle of a page is a value (``Singola`` / ``450``). At the
+    edge it is a page number if it is spelled like one (``pag. 3``, ``3/9``) or,
+    when it is a bare number, close to the page's position in the file.
+    """
+
+    def is_page_no(ln: str) -> bool:
+        if not _PAGE_NO.match(ln):
+            return False
+        return not _BARE_NUMBER.match(ln) or abs(int(ln) - number) <= 5
+
+    if page and is_page_no(page[-1]):
+        page = page[:-1]
+    if page and is_page_no(page[0]):
+        page = page[1:]
+    return page
 
 
 _DATES = re.compile(
@@ -139,6 +172,11 @@ _DATES = re.compile(
     re.I,
 )
 _PRICE_OR_TIME = re.compile(r"[€$£]|\b(euro|eur)\b|\b\d{1,2}[:.]\d{2}\b", re.I)
+
+
+def _is_prose(line: str) -> bool:
+    """A sentence, not a label: several words, and not set in capitals."""
+    return len(line.split()) >= 4 and not _is_upper(line)
 
 
 def _is_label_page(lines: list[str]) -> bool:
@@ -154,7 +192,7 @@ def _is_label_page(lines: list[str]) -> bool:
     if any(_PRICE_OR_TIME.search(ln) for ln in lines):
         return False
     if len(lines) < 3:
-        return True
+        return not any(_is_prose(ln) for ln in lines)
     mean = sum(map(len, lines)) / len(lines)
     return mean < 15 and sum(len(ln) >= 50 for ln in lines) < 3
 
@@ -188,10 +226,15 @@ def _in_layout_order(page: list[str], layout: str) -> list[str]:
         return page
     flat = _squash(layout)
     keys: list[int] = []
+    used: set[int] = set()
     last = 0
     for ln in page:
         sq = _squash(ln)
         found = flat.find(sq) if len(sq) >= 6 else -1
+        while found in used:  # a repeated line takes the next occurrence, not the first again
+            found = flat.find(sq, found + 1)
+        if found >= 0:
+            used.add(found)
         last = found if found >= 0 else last
         keys.append(last)
     order = sorted(range(len(page)), key=lambda i: (keys[i], i))
@@ -227,8 +270,9 @@ def _clean_pages(
     headers, footers, the ``Guida / Salvastudente`` banner), page numbers,
     "back to index" links and form feeds. Repeated lines only count in documents
     of three or more pages, so a short text file can never lose a line to that
-    rule. Page numbers are only removed from PDFs: in Markdown or text a line
-    that is just ``12`` or ``1/2`` is content.
+    rule. Page numbers are only removed from PDFs, and only from the first or last
+    line of a page: elsewhere a line that is just ``450`` is a value, and in
+    Markdown or text a line that is just ``12`` or ``1/2`` is content.
     """
     cleaned = [_lines(text) for text, _ in pages]
     if len(cleaned) >= 3:
@@ -242,11 +286,9 @@ def _clean_pages(
 
     result: list[list[str]] = []
     for number, (page, (_, layout)) in enumerate(zip(cleaned, pages, strict=True), start=1):
-        page = [
-            ln
-            for ln in page
-            if ln not in furniture and not _NAV.match(ln) and not (pdf and _PAGE_NO.match(ln))
-        ]
+        page = [ln for ln in page if ln not in furniture and not _NAV.match(ln)]
+        if pdf:
+            page = _strip_page_number(page, number)
         if layout and _is_label_page(page):  # layout text exists only for PDFs
             log.warning(
                 "%s p.%d skipped as labels, not prose: check it held no facts", name, number
@@ -266,7 +308,8 @@ def _clean_pages(
 _MD_HEADING = re.compile(r"^(#{1,6})\s+(.*\S)\s*$")
 _TOP_HEADING = re.compile(r"^\d{1,2}\.\s+[A-ZÀ-Ý][A-ZÀ-Ý0-9 '’&/,-]{2,}$")
 _SUB_HEADING = re.compile(r"^[a-z]\.\s+[A-ZÀ-Ý][^.?!]{2,50}$")
-_BULLET = re.compile(r"^(•|\*|-|–|\d{1,2}[.)])\s+")
+_BULLET = re.compile(r"^(•|\*|-|–|\d{1,2}[.)]|[a-z]\.)\s+")
+_LIST_ITEM = re.compile(r"^[a-z]\.\s")
 
 
 def _is_upper(line: str) -> bool:
@@ -290,7 +333,9 @@ def _heading(line: str, following: str = "") -> tuple[int, str] | None:
         return len(m.group(1)), m.group(2)
     if _TOP_HEADING.match(line):
         return 1, line
-    if _SUB_HEADING.match(line):
+    # "a. Programma offerto" is a sub-clause when prose follows it; in a run of short
+    # items ("a. Essere maggiorenni" / "b. Essere iscritti") it is a list entry.
+    if _SUB_HEADING.match(line) and len(following) >= 50 and not _LIST_ITEM.match(following):
         return 2, line
     prose_follows = len(following) >= 50 or _is_question(following)
     if (
@@ -304,6 +349,10 @@ def _heading(line: str, following: str = "") -> tuple[int, str] | None:
     return None
 
 
+_COMPOUND_HEADS = {"check", "self", "non", "ex", "e", "post", "pre", "anti", "co", "multi", "extra"}
+"""Words that take a hyphen when a line ends on them: ``check-in``, ``self-service``."""
+
+
 def _join(lines: list[str]) -> str:
     """Reflow wrapped prose; keep short lines (tables, lists) on their own line."""
     out = ""
@@ -311,7 +360,9 @@ def _join(lines: list[str]) -> str:
         if not out:
             out = ln
         elif re.search(r"\w-$", out) and ln[:1].islower():
-            out = out[:-1] + ln  # "magi-" + "strale"
+            head = re.split(r"[\s-]", out[:-1])[-1].lower()
+            # "magi-" + "strale" is one word; "check-" + "in" is a compound.
+            out = out + ln if head in _COMPOUND_HEADS else out[:-1] + ln
         elif len(out.rsplit("\n", 1)[-1]) >= 60 and not out.endswith((".", ":", ";", "?", "!")):
             out += " " + ln
         else:
@@ -384,28 +435,57 @@ def _sections(lines: list[str]) -> list[_Section]:
     return sections
 
 
-def _split_long(unit: str) -> list[str]:
-    if len(unit) <= MAX_CHARS:
+_ABBREVIATION = re.compile(r"\b(art|artt|sig|sigg|dott|prof|es|cfr|pag|ca|n)\.$", re.I)
+
+
+def _cut_at_spaces(text: str, size: int) -> list[str]:
+    """Pieces of at most ``size`` characters; cut on a space, or hard if there is none."""
+    out: list[str] = []
+    while len(text) > size:
+        cut = text.rfind(" ", 0, size + 1)
+        cut = cut if cut > 0 else size
+        out.append(text[:cut].strip())
+        text = text[cut:].strip()
+    if text:
+        out.append(text)
+    return out
+
+
+def _split_long(unit: str, reserve: int = 0) -> list[str]:
+    """Split a unit longer than ``MAX_CHARS`` on lines and sentences.
+
+    ``reserve`` is room kept for the section title that ``build_chunks`` puts in
+    front. No piece is longer than ``MAX_CHARS - reserve``: a sentence that is
+    itself too long is cut at a space, and text with no space at all is cut hard.
+    """
+    target, limit = TARGET_CHARS - reserve, MAX_CHARS - reserve
+    if len(unit) <= limit:
         return [unit]
+    # Zero-width split points, so the space after a sentence stays with the next one.
+    parts: list[str] = []
+    for part in re.split(r"(?<=\n)|(?<=[.!?;])(?= )", unit):
+        if parts and _ABBREVIATION.search(parts[-1].rstrip()):
+            parts[-1] += part  # "Art." / "sig." is not the end of a sentence
+        else:
+            parts.append(part)
     pieces: list[str] = []
     cur = ""
-    # Zero-width split points, so the space after a sentence stays with the next one.
-    for part in re.split(r"(?<=\n)|(?<=[.!?;])(?= )", unit):
-        if cur and len(cur) + len(part) > TARGET_CHARS:
+    for part in (q for p in parts for q in ([p] if len(p) <= limit else _cut_at_spaces(p, target))):
+        if cur and len(cur) + len(part) > target:
             pieces.append(cur.strip())
             cur = ""
-        cur += part
+        cur += part if cur else part.lstrip()
     if cur.strip():
         pieces.append(cur.strip())
     return pieces
 
 
-def _pack(units: list[str]) -> list[str]:
-    """Merge neighbouring units until a chunk reaches ``TARGET_CHARS``."""
+def _pack(units: list[str], reserve: int = 0) -> list[str]:
+    """Merge neighbouring units until a chunk reaches ``TARGET_CHARS - reserve``."""
     packed: list[str] = []
     cur = ""
-    for unit in (p for u in units for p in _split_long(u)):
-        if cur and len(cur) + len(unit) + 1 > TARGET_CHARS:
+    for unit in (p for u in units for p in _split_long(u, reserve)):
+        if cur and len(cur) + len(unit) + 1 > TARGET_CHARS - reserve:
             packed.append(cur)
             cur = ""
         cur = f"{cur}\n{unit}" if cur else unit
@@ -476,7 +556,9 @@ def build_chunks(src: Path | None = None) -> list[Chunk]:
             lines = [ln for ln in lines if not ln.startswith("# ")]
         n = 0
         for section in _sections(lines):
-            for text in _pack(section.units):
+            # the title is prepended below, so it counts against the chunk size
+            reserve = min(len(section.title) + 1, TARGET_CHARS // 2) if section.title else 0
+            for text in _pack(section.units, reserve):
                 n += 1
                 body = f"{section.title}\n{text}" if section.title else text
                 chunks.append(
