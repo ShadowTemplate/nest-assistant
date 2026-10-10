@@ -26,6 +26,7 @@ Second line of defence. Each rule that fires is logged and counted
 | Rule | Catches | Action |
 |---|---|---|
 | `invented_citation` | cited id that was never retrieved | drop the citation |
+| `hidden_citation` | cited id of a chunk above the asker's tier | drop the citation |
 | `hidden_chunk_text` | answer repeats text of a chunk above the asker's tier | refuse |
 | `system_prompt_leak` | answer repeats the system prompt | refuse |
 | `injection_in_output` | "ignoro le istruzioni", "senza regole", `[SYSTEM]`, self-granted access | refuse |
@@ -60,10 +61,10 @@ Second line of defence. Each rule that fires is logged and counted
 
 - **Phrase-based and Italian-only.** A reworded or translated output passes
   (rt014 is in English; rt018 asks the model to echo a false statement politely).
-- **`hidden_chunk_text` can only see what it is given.** The pipeline passes
-  only already-visible chunks to `guardrails.apply`, so in production this rule
-  cannot fire; the real protection is INDEX's tier filter. Kept as defence in
-  depth.
+- **`hidden_chunk_text` and `hidden_citation` can only see what they are
+  given.** The pipeline passes only already-visible chunks to
+  `guardrails.apply`, so in production these rules cannot fire; the real
+  protection is INDEX's tier filter. Kept as defence in depth.
 - **Short secrets slip through.** Detection needs a run of 6 shared words. A
   single name or number from a hidden chunk is not caught.
 - **`uncited_answer` is blunt.** Any valid answer the model forgets to cite
