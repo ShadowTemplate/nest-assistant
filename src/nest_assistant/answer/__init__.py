@@ -32,7 +32,7 @@ import re
 
 from .. import llm
 from ..config import DEFAULT_LANG, PROMPTS_DIR
-from ..schema import Answer, Chunk
+from ..schema import TIERS, Answer, Chunk, tier_rank
 
 OWNER = "TEAM 3 — ANSWER"
 INTERFACE = "answer.generate(q: str, chunks: list[Chunk], lang: str) -> Answer"
@@ -49,6 +49,32 @@ REFUSAL_IT = (
 )
 """The refusal message. Parents will read this. Write it with care — it is the
 sentence that decides whether "I don't know" sounds trustworthy or broken."""
+
+
+TIER_LABEL_IT = {"public": "pubblico", "resident": "residente", "staff": "staff"}
+"""How a tier is named in the footer."""
+
+
+def score_confidence(raw: str, cited: list[str], supplied: int) -> float:
+    """How much of the raw answer is backed by a valid citation, in 0.4..0.95.
+
+    Heuristic, not a probability: the share of sentences that carry a citation
+    (0.4 base + up to 0.5), plus a small bonus when more than one source agrees.
+    """
+    sentences = [s for s in re.split(r"(?<=[.!?])\s+|\n+", raw) if s.strip()]
+    grounded = sum(1 for s in sentences if _CITATION_RE.search(s)) / max(len(sentences), 1)
+    bonus = 0.05 if len(cited) > 1 and supplied > 1 else 0.0
+    return round(min(0.4 + 0.5 * grounded + bonus, 0.95), 2)
+
+
+def format_footer(confidence: float, chunks: list[Chunk]) -> str:
+    """Footer line: the confidence score and the privilege level of the sources.
+
+    The privilege is the highest tier among the cited chunks, i.e. the lowest
+    tier of asker that could have been given this answer.
+    """
+    tier = max((c.tier for c in chunks), key=tier_rank, default=TIERS[0])
+    return f"_Affidabilità: {confidence:.0%} · Livello: {TIER_LABEL_IT.get(tier, tier)}_"
 
 
 def load_system_prompt(lang: str = DEFAULT_LANG) -> str:
@@ -119,7 +145,10 @@ def generate(q: str, chunks: list[Chunk], lang: str = DEFAULT_LANG) -> Answer:
     if not cited or not text:
         return refusal
 
-    return Answer(text=text, citations=cited, confidence=0.5, refused=False)
+    confidence = score_confidence(raw, cited, len(chunks))
+    cited_chunks = [c for c in chunks if c.id in cited]
+    text = f"{text}\n\n{format_footer(confidence, cited_chunks)}"
+    return Answer(text=text, citations=cited, confidence=confidence, refused=False)
 
 
 __all__ = [
