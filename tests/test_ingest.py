@@ -509,3 +509,38 @@ def test_pypdf_log_level_is_restored():
     with ingest._quiet_pypdf():
         assert logger.level == logging.ERROR
     assert logger.level == logging.WARNING
+
+
+# ---------------------------------------------------------------------------
+# Review round 4
+# ---------------------------------------------------------------------------
+def test_markdown_level_3_heading_joins_the_path():
+    lines = ["# Doc", "## Sec", "### A", "Testo A.", "#### B", "Testo B.", "### C", "Testo C."]
+    titles = [s.title for s in ingest._sections(lines)]
+    assert titles == ["Doc > Sec > A", "Doc > Sec > A > B", "Doc > Sec > C"]
+
+
+def test_split_long_keeps_the_space_before_a_cut_sentence():
+    unit = "Ok. " + " ".join(["parola"] * 300)  # one sentence longer than MAX_CHARS
+    pieces = ingest._split_long(unit)
+    assert not any("Ok.parola" in p for p in pieces)
+    assert all(len(p) <= ingest.MAX_CHARS for p in pieces)
+
+
+def test_bom_does_not_hide_the_first_heading(tmp_path: Path):
+    (tmp_path / "manifest.yaml").write_text(
+        "documents:\n  - {filename: a.md, lang: it, tier: public}\n", encoding="utf-8"
+    )
+    (tmp_path / "a.md").write_text("# Titolo\nTesto.\n", encoding="utf-8-sig")
+    assert [c.section for c in ingest.build_chunks(tmp_path)] == ["Titolo"]
+
+
+def test_files_in_hidden_folders_are_ignored(tmp_path: Path):
+    (tmp_path / "manifest.yaml").write_text(
+        "documents:\n  - {filename: a.md, lang: it, tier: public}\n", encoding="utf-8"
+    )
+    (tmp_path / "a.md").write_text("# Titolo\nTesto.\n", encoding="utf-8")
+    (tmp_path / ".cache").mkdir()
+    (tmp_path / ".cache" / "a.md").write_text("# Vecchio\nCopia.\n", encoding="utf-8")
+    chunks = ingest.build_chunks(tmp_path)  # no duplicate-name error
+    assert [c.section for c in chunks] == ["Titolo"]

@@ -26,6 +26,7 @@ from __future__ import annotations
 
 import logging
 import re
+from collections import Counter
 from collections.abc import Callable, Iterator
 from contextlib import contextmanager
 from dataclasses import dataclass
@@ -48,7 +49,14 @@ MAX_CHARS = 1400
 """A single unit longer than this is split on lines, then sentences."""
 
 # Files that live next to the documents but are not documents.
-_NOT_DOCUMENTS = {"manifest.yaml", "INVENTORY.md", "README.md", "allowlist.json", ".gitkeep"}
+_NOT_DOCUMENTS = {
+    "manifest.yaml",
+    "INVENTORY.md",
+    "README.md",
+    "allowlist.json",
+    "bot_testers.json",
+    ".gitkeep",
+}
 _SUPPORTED = {".pdf", ".md", ".txt", ".docx"}
 
 
@@ -100,18 +108,19 @@ def _load_manifest(src: Path) -> dict[str, _Entry]:
 
 
 def _documents(src: Path) -> list[Path]:
-    found = [
+    return [
         p
         for p in sorted(src.rglob("*"))
-        if p.is_file() and p.name not in _NOT_DOCUMENTS and not p.name.startswith(".")
+        if p.is_file()
+        and p.name not in _NOT_DOCUMENTS
+        and not any(part.startswith(".") for part in p.relative_to(src).parts)
     ]
-    return found
 
 
 def _check_unique(documents: list[Path], manifest: dict[str, _Entry]) -> None:
     """Two listed files with one name would share ids. Unlisted files are never ingested."""
-    names = [p.name for p in documents if p.name in manifest]
-    dupes = {n for n in names if names.count(n) > 1}
+    counts = Counter(p.name for p in documents if p.name in manifest)
+    dupes = {n for n, c in counts.items() if c > 1}
     if dupes:
         raise ValueError(f"same filename in two folders, citations would collide: {sorted(dupes)}")
 
@@ -185,7 +194,8 @@ def _read_pages(path: Path) -> list[tuple[str, _Layout]]:
             else:
                 lines.append(block.text)
         return [("\n".join(lines), _no_layout)]
-    return [(path.read_text(encoding="utf-8"), _no_layout)]
+    # utf-8-sig: a BOM left by a Windows editor would hide the first "# " heading.
+    return [(path.read_text(encoding="utf-8-sig"), _no_layout)]
 
 
 def _norm(line: str) -> str:
@@ -397,6 +407,10 @@ def _is_question(line: str) -> bool:
     return line.endswith("?") and _is_upper(line)
 
 
+_CAPS = 0
+"""Level of an ALL-CAPS heading: outside the numbered/Markdown levels, so ``###`` is not one."""
+
+
 def _heading(line: str, following: str = "") -> tuple[int, str] | None:
     """``(level, title)`` if the line is a section heading, else None.
 
@@ -420,7 +434,7 @@ def _heading(line: str, following: str = "") -> tuple[int, str] | None:
         and not line.endswith((".", "?", ":", ","))
         and prose_follows
     ):
-        return 3, line
+        return _CAPS, line
     return None
 
 
@@ -511,7 +525,7 @@ def _sections(lines: list[str]) -> list[_Section]:
         if h := _heading(ln, lines[i + 1] if i + 1 < len(lines) else ""):
             flush_section(title)
             level, text = h
-            if level == 3:
+            if level == _CAPS:
                 caps = text
             else:
                 path, caps = path[: level - 1] + [text], None
@@ -569,7 +583,16 @@ def _split_long(unit: str, reserve: int = 0) -> list[str]:
             parts.append(part)
     pieces: list[str] = []
     cur = ""
-    for part in (q for p in parts for q in ([p] if len(p) <= limit else _cut_at_spaces(p, target))):
+
+    def cut(p: str) -> list[str]:
+        # _cut_at_spaces strips its pieces; put the separator back so a piece
+        # appended to ``cur`` does not glue onto the previous word.
+        if len(p) <= limit:
+            return [p]
+        lead = p[: len(p) - len(p.lstrip())]
+        return [(lead if k == 0 else " ") + q for k, q in enumerate(_cut_at_spaces(p, target))]
+
+    for part in (q for p in parts for q in cut(p)):
         if cur and len(cur) + len(part) > target:
             pieces.append(cur.strip())
             cur = ""
@@ -643,10 +666,10 @@ def build_chunks(src: Path | None = None) -> list[Chunk]:
         entry = manifest.get(path.name)
         if entry is None:
             continue
-        if path.suffix.lower() not in _SUPPORTED:
+        suffix = path.suffix.lower()
+        if suffix not in _SUPPORTED:
             log.warning("NOT INGESTED: %s has unsupported format %s", path.name, path.suffix)
             continue
-        suffix = path.suffix.lower()
         with _quiet_pypdf():  # layout text is read lazily, inside _clean_pages
             pages = _clean_pages(_read_pages(path), path.name, pdf=suffix == ".pdf")
         lines = [ln for page in pages for ln in page]
