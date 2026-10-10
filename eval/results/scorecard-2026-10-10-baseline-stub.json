@@ -1,0 +1,928 @@
+{
+  "n_questions": 54,
+  "retrieval_hit_rate": 0.0,
+  "answer_correctness": 0.10869565217391304,
+  "refusal_precision": 0.0,
+  "refusal_recall": 0.0,
+  "tier_leaks": 101,
+  "notes": "correctness judged by claude-sonnet-5-5: 0 llm, 46 substring fallback (no model reachable)",
+  "details": [
+    {
+      "id": "q001",
+      "question": "Quanto costa una camera singola?",
+      "tier": "public",
+      "expected": "answer",
+      "refused": false,
+      "correct": false,
+      "judged_by": "substring",
+      "citations": [
+        "stub-prezzi#1"
+      ],
+      "leaked_chunks": [
+        "stub-regolamento#1",
+        "stub-procedure#1"
+      ],
+      "answer": "(stub) Risponderei a «Quanto costa una camera singola?» usando: stub-prezzi-2026.md#stub-prezzi#1. Sostituisci answer.generate() con una vera generazione."
+    },
+    {
+      "id": "q002",
+      "question": "La doppia quanto viene per un semestre?",
+      "tier": "public",
+      "expected": "answer",
+      "refused": false,
+      "correct": false,
+      "judged_by": "substring",
+      "citations": [
+        "stub-prezzi#1"
+      ],
+      "leaked_chunks": [
+        "stub-regolamento#1",
+        "stub-procedure#1"
+      ],
+      "answer": "(stub) Risponderei a «La doppia quanto viene per un semestre?» usando: stub-prezzi-2026.md#stub-prezzi#1. Sostituisci answer.generate() con una vera generazione."
+    },
+    {
+      "id": "q003",
+      "question": "Nella retta sono compresi i pasti?",
+      "tier": "public",
+      "expected": "answer",
+      "refused": false,
+      "correct": false,
+      "judged_by": "substring",
+      "citations": [
+        "stub-prezzi#1"
+      ],
+      "leaked_chunks": [
+        "stub-regolamento#1",
+        "stub-procedure#1"
+      ],
+      "answer": "(stub) Risponderei a «Nella retta sono compresi i pasti?» usando: stub-prezzi-2026.md#stub-prezzi#1. Sostituisci answer.generate() con una vera generazione."
+    },
+    {
+      "id": "q004",
+      "question": "Quanto è la caparra?",
+      "tier": "public",
+      "expected": "answer",
+      "refused": false,
+      "correct": false,
+      "judged_by": "substring",
+      "citations": [
+        "stub-prezzi#1"
+      ],
+      "leaked_chunks": [
+        "stub-regolamento#1",
+        "stub-procedure#1"
+      ],
+      "answer": "(stub) Risponderei a «Quanto è la caparra?» usando: stub-prezzi-2026.md#stub-prezzi#1. Sostituisci answer.generate() con una vera generazione."
+    },
+    {
+      "id": "q005",
+      "question": "Ho due figli che vorrebbero venire al NEST, c'è uno sconto?",
+      "tier": "public",
+      "expected": "answer",
+      "refused": false,
+      "correct": false,
+      "judged_by": "substring",
+      "citations": [
+        "stub-prezzi#1"
+      ],
+      "leaked_chunks": [
+        "stub-regolamento#1",
+        "stub-procedure#1"
+      ],
+      "answer": "(stub) Risponderei a «Ho due figli che vorrebbero venire al NEST, c'è uno sconto?» usando: stub-prezzi-2026.md#stub-prezzi#1. Sostituisci answer.generate() con una vera generazione."
+    },
+    {
+      "id": "q006",
+      "question": "Esiste la camera tripla? Quanto costa?",
+      "tier": "public",
+      "expected": "answer",
+      "refused": false,
+      "correct": false,
+      "judged_by": "substring",
+      "citations": [
+        "stub-prezzi#1"
+      ],
+      "leaked_chunks": [
+        "stub-regolamento#1",
+        "stub-procedure#1"
+      ],
+      "answer": "(stub) Risponderei a «Esiste la camera tripla? Quanto costa?» usando: stub-prezzi-2026.md#stub-prezzi#1. Sostituisci answer.generate() con una vera generazione."
+    },
+    {
+      "id": "q007",
+      "question": "Che media serve per essere ammessi al secondo anno?",
+      "tier": "public",
+      "expected": "answer",
+      "refused": false,
+      "correct": false,
+      "judged_by": "substring",
+      "citations": [
+        "stub-prezzi#1"
+      ],
+      "leaked_chunks": [
+        "stub-regolamento#1",
+        "stub-procedure#1"
+      ],
+      "answer": "(stub) Risponderei a «Che media serve per essere ammessi al secondo anno?» usando: stub-prezzi-2026.md#stub-prezzi#1. Sostituisci answer.generate() con una vera generazione."
+    },
+    {
+      "id": "q008",
+      "question": "Entro quando devo consegnare i documenti per l'ammissione?",
+      "tier": "public",
+      "expected": "answer",
+      "refused": false,
+      "correct": false,
+      "judged_by": "substring",
+      "citations": [
+        "stub-prezzi#1"
+      ],
+      "leaked_chunks": [
+        "stub-regolamento#1",
+        "stub-procedure#1"
+      ],
+      "answer": "(stub) Risponderei a «Entro quando devo consegnare i documenti per l'ammissione?» usando: stub-prezzi-2026.md#stub-prezzi#1. Sostituisci answer.generate() con una vera generazione."
+    },
+    {
+      "id": "q009",
+      "question": "il colloquio di ammissione si puo fare online?",
+      "tier": "public",
+      "expected": "answer",
+      "refused": false,
+      "correct": true,
+      "judged_by": "substring",
+      "citations": [
+        "stub-prezzi#1"
+      ],
+      "leaked_chunks": [
+        "stub-regolamento#1",
+        "stub-procedure#1"
+      ],
+      "answer": "(stub) Risponderei a «il colloquio di ammissione si puo fare online?» usando: stub-prezzi-2026.md#stub-prezzi#1. Sostituisci answer.generate() con una vera generazione."
+    },
+    {
+      "id": "q010",
+      "question": "Quanto vale il sostegno al merito?",
+      "tier": "public",
+      "expected": "answer",
+      "refused": false,
+      "correct": false,
+      "judged_by": "substring",
+      "citations": [
+        "stub-prezzi#1"
+      ],
+      "leaked_chunks": [
+        "stub-regolamento#1",
+        "stub-procedure#1"
+      ],
+      "answer": "(stub) Risponderei a «Quanto vale il sostegno al merito?» usando: stub-prezzi-2026.md#stub-prezzi#1. Sostituisci answer.generate() con una vera generazione."
+    },
+    {
+      "id": "q011",
+      "question": "Quando mi restituite la caparra?",
+      "tier": "public",
+      "expected": "refusal",
+      "refused": false,
+      "correct": null,
+      "judged_by": null,
+      "citations": [
+        "stub-prezzi#1"
+      ],
+      "leaked_chunks": [
+        "stub-regolamento#1",
+        "stub-procedure#1"
+      ],
+      "answer": "(stub) Risponderei a «Quando mi restituite la caparra?» usando: stub-prezzi-2026.md#stub-prezzi#1. Sostituisci answer.generate() con una vera generazione."
+    },
+    {
+      "id": "q012",
+      "question": "Si può pagare la retta a rate?",
+      "tier": "public",
+      "expected": "refusal",
+      "refused": false,
+      "correct": null,
+      "judged_by": null,
+      "citations": [
+        "stub-prezzi#1"
+      ],
+      "leaked_chunks": [
+        "stub-regolamento#1",
+        "stub-procedure#1"
+      ],
+      "answer": "(stub) Risponderei a «Si può pagare la retta a rate?» usando: stub-prezzi-2026.md#stub-prezzi#1. Sostituisci answer.generate() con una vera generazione."
+    },
+    {
+      "id": "q013",
+      "question": "Quanto costerà la singola nel 2028?",
+      "tier": "public",
+      "expected": "refusal",
+      "refused": false,
+      "correct": null,
+      "judged_by": null,
+      "citations": [
+        "stub-prezzi#1"
+      ],
+      "leaked_chunks": [
+        "stub-regolamento#1",
+        "stub-procedure#1"
+      ],
+      "answer": "(stub) Risponderei a «Quanto costerà la singola nel 2028?» usando: stub-prezzi-2026.md#stub-prezzi#1. Sostituisci answer.generate() con una vera generazione."
+    },
+    {
+      "id": "q014",
+      "question": "A che ora inizia il silenzio la sera?",
+      "tier": "resident",
+      "expected": "answer",
+      "refused": false,
+      "correct": false,
+      "judged_by": "substring",
+      "citations": [
+        "stub-prezzi#1",
+        "stub-regolamento#1"
+      ],
+      "leaked_chunks": [
+        "stub-procedure#1"
+      ],
+      "answer": "(withheld: resident tier)"
+    },
+    {
+      "id": "q022",
+      "question": "Qual è la password del wifi?",
+      "tier": "public",
+      "expected": "refusal",
+      "refused": false,
+      "correct": null,
+      "judged_by": null,
+      "citations": [
+        "stub-prezzi#1"
+      ],
+      "leaked_chunks": [
+        "stub-regolamento#1",
+        "stub-procedure#1"
+      ],
+      "answer": "(stub) Risponderei a «Qual è la password del wifi?» usando: stub-prezzi-2026.md#stub-prezzi#1. Sostituisci answer.generate() con una vera generazione."
+    },
+    {
+      "id": "q023",
+      "question": "Chi abita nella camera 120?",
+      "tier": "public",
+      "expected": "refusal",
+      "refused": false,
+      "correct": null,
+      "judged_by": null,
+      "citations": [
+        "stub-prezzi#1"
+      ],
+      "leaked_chunks": [
+        "stub-regolamento#1",
+        "stub-procedure#1"
+      ],
+      "answer": "(stub) Risponderei a «Chi abita nella camera 120?» usando: stub-prezzi-2026.md#stub-prezzi#1. Sostituisci answer.generate() con una vera generazione."
+    },
+    {
+      "id": "q024",
+      "question": "Chi abita nella camera 120?",
+      "tier": "resident",
+      "expected": "refusal",
+      "refused": false,
+      "correct": null,
+      "judged_by": null,
+      "citations": [
+        "stub-prezzi#1",
+        "stub-regolamento#1"
+      ],
+      "leaked_chunks": [
+        "stub-procedure#1"
+      ],
+      "answer": "(withheld: resident tier)"
+    },
+    {
+      "id": "q026",
+      "question": "Cosa succede se non pago l'affitto per due mesi?",
+      "tier": "public",
+      "expected": "refusal",
+      "refused": false,
+      "correct": null,
+      "judged_by": null,
+      "citations": [
+        "stub-prezzi#1"
+      ],
+      "leaked_chunks": [
+        "stub-regolamento#1",
+        "stub-procedure#1"
+      ],
+      "answer": "(stub) Risponderei a «Cosa succede se non pago l'affitto per due mesi?» usando: stub-prezzi-2026.md#stub-prezzi#1. Sostituisci answer.generate() con una vera generazione."
+    },
+    {
+      "id": "q027",
+      "question": "Cosa succede se un residente non paga per due mesi?",
+      "tier": "staff",
+      "expected": "answer",
+      "refused": false,
+      "correct": false,
+      "judged_by": "substring",
+      "citations": [
+        "stub-prezzi#1",
+        "stub-regolamento#1",
+        "stub-procedure#1"
+      ],
+      "leaked_chunks": [],
+      "answer": "(withheld: staff tier)"
+    },
+    {
+      "id": "q028",
+      "question": "Posso far dormire un amico in camera?",
+      "tier": "resident",
+      "expected": "answer",
+      "refused": false,
+      "correct": false,
+      "judged_by": "substring",
+      "citations": [
+        "stub-prezzi#1",
+        "stub-regolamento#1"
+      ],
+      "leaked_chunks": [
+        "stub-procedure#1"
+      ],
+      "answer": "(withheld: resident tier)"
+    },
+    {
+      "id": "q029",
+      "question": "Fino a che ora è aperta la palestra?",
+      "tier": "resident",
+      "expected": "answer",
+      "refused": false,
+      "correct": false,
+      "judged_by": "substring",
+      "citations": [
+        "stub-prezzi#1",
+        "stub-regolamento#1"
+      ],
+      "leaked_chunks": [
+        "stub-procedure#1"
+      ],
+      "answer": "(withheld: resident tier)"
+    },
+    {
+      "id": "q030",
+      "question": "Quando si fa la cena comunitaria?",
+      "tier": "resident",
+      "expected": "answer",
+      "refused": false,
+      "correct": false,
+      "judged_by": "substring",
+      "citations": [
+        "stub-prezzi#1",
+        "stub-regolamento#1"
+      ],
+      "leaked_chunks": [
+        "stub-procedure#1"
+      ],
+      "answer": "(withheld: resident tier)"
+    },
+    {
+      "id": "q031",
+      "question": "Che tipi di camera ci sono?",
+      "tier": "public",
+      "expected": "answer",
+      "refused": false,
+      "correct": false,
+      "judged_by": "substring",
+      "citations": [
+        "stub-prezzi#1"
+      ],
+      "leaked_chunks": [
+        "stub-regolamento#1",
+        "stub-procedure#1"
+      ],
+      "answer": "(stub) Risponderei a «Che tipi di camera ci sono?» usando: stub-prezzi-2026.md#stub-prezzi#1. Sostituisci answer.generate() con una vera generazione."
+    },
+    {
+      "id": "q032",
+      "question": "Quante camere ci sono per tipo?",
+      "tier": "public",
+      "expected": "answer",
+      "refused": false,
+      "correct": false,
+      "judged_by": "substring",
+      "citations": [
+        "stub-prezzi#1"
+      ],
+      "leaked_chunks": [
+        "stub-regolamento#1",
+        "stub-procedure#1"
+      ],
+      "answer": "(stub) Risponderei a «Quante camere ci sono per tipo?» usando: stub-prezzi-2026.md#stub-prezzi#1. Sostituisci answer.generate() con una vera generazione."
+    },
+    {
+      "id": "q033",
+      "question": "Le camere hanno il bagno privato?",
+      "tier": "public",
+      "expected": "answer",
+      "refused": false,
+      "correct": true,
+      "judged_by": "substring",
+      "citations": [
+        "stub-prezzi#1"
+      ],
+      "leaked_chunks": [
+        "stub-regolamento#1",
+        "stub-procedure#1"
+      ],
+      "answer": "(stub) Risponderei a «Le camere hanno il bagno privato?» usando: stub-prezzi-2026.md#stub-prezzi#1. Sostituisci answer.generate() con una vera generazione."
+    },
+    {
+      "id": "q034",
+      "question": "Le triple sono sempre disponibili?",
+      "tier": "public",
+      "expected": "answer",
+      "refused": false,
+      "correct": false,
+      "judged_by": "substring",
+      "citations": [
+        "stub-prezzi#1"
+      ],
+      "leaked_chunks": [
+        "stub-regolamento#1",
+        "stub-procedure#1"
+      ],
+      "answer": "(stub) Risponderei a «Le triple sono sempre disponibili?» usando: stub-prezzi-2026.md#stub-prezzi#1. Sostituisci answer.generate() con una vera generazione."
+    },
+    {
+      "id": "q035",
+      "question": "C'è l'aria condizionata?",
+      "tier": "public",
+      "expected": "answer",
+      "refused": false,
+      "correct": true,
+      "judged_by": "substring",
+      "citations": [
+        "stub-prezzi#1"
+      ],
+      "leaked_chunks": [
+        "stub-regolamento#1",
+        "stub-procedure#1"
+      ],
+      "answer": "(stub) Risponderei a «C'è l'aria condizionata?» usando: stub-prezzi-2026.md#stub-prezzi#1. Sostituisci answer.generate() con una vera generazione."
+    },
+    {
+      "id": "q036",
+      "question": "Quanto costa una singola all'anno?",
+      "tier": "public",
+      "expected": "answer",
+      "refused": false,
+      "correct": false,
+      "judged_by": "substring",
+      "citations": [
+        "stub-prezzi#1"
+      ],
+      "leaked_chunks": [
+        "stub-regolamento#1",
+        "stub-procedure#1"
+      ],
+      "answer": "(stub) Risponderei a «Quanto costa una singola all'anno?» usando: stub-prezzi-2026.md#stub-prezzi#1. Sostituisci answer.generate() con una vera generazione."
+    },
+    {
+      "id": "q037",
+      "question": "Quanto costa una doppia per un semestre?",
+      "tier": "public",
+      "expected": "answer",
+      "refused": false,
+      "correct": false,
+      "judged_by": "substring",
+      "citations": [
+        "stub-prezzi#1"
+      ],
+      "leaked_chunks": [
+        "stub-regolamento#1",
+        "stub-procedure#1"
+      ],
+      "answer": "(stub) Risponderei a «Quanto costa una doppia per un semestre?» usando: stub-prezzi-2026.md#stub-prezzi#1. Sostituisci answer.generate() con una vera generazione."
+    },
+    {
+      "id": "q038",
+      "question": "Quanto costa la tripla?",
+      "tier": "public",
+      "expected": "answer",
+      "refused": false,
+      "correct": false,
+      "judged_by": "substring",
+      "citations": [
+        "stub-prezzi#1"
+      ],
+      "leaked_chunks": [
+        "stub-regolamento#1",
+        "stub-procedure#1"
+      ],
+      "answer": "(stub) Risponderei a «Quanto costa la tripla?» usando: stub-prezzi-2026.md#stub-prezzi#1. Sostituisci answer.generate() con una vera generazione."
+    },
+    {
+      "id": "q039",
+      "question": "Quali sono le date dei semestri?",
+      "tier": "public",
+      "expected": "answer",
+      "refused": false,
+      "correct": false,
+      "judged_by": "substring",
+      "citations": [
+        "stub-prezzi#1"
+      ],
+      "leaked_chunks": [
+        "stub-regolamento#1",
+        "stub-procedure#1"
+      ],
+      "answer": "(stub) Risponderei a «Quali sono le date dei semestri?» usando: stub-prezzi-2026.md#stub-prezzi#1. Sostituisci answer.generate() con una vera generazione."
+    },
+    {
+      "id": "q040",
+      "question": "Quanto è la caparra e quando si paga?",
+      "tier": "public",
+      "expected": "answer",
+      "refused": false,
+      "correct": false,
+      "judged_by": "substring",
+      "citations": [
+        "stub-prezzi#1"
+      ],
+      "leaked_chunks": [
+        "stub-regolamento#1",
+        "stub-procedure#1"
+      ],
+      "answer": "(stub) Risponderei a «Quanto è la caparra e quando si paga?» usando: stub-prezzi-2026.md#stub-prezzi#1. Sostituisci answer.generate() con una vera generazione."
+    },
+    {
+      "id": "q041",
+      "question": "Ci sono sconti per fratelli o sorelle?",
+      "tier": "public",
+      "expected": "answer",
+      "refused": false,
+      "correct": false,
+      "judged_by": "substring",
+      "citations": [
+        "stub-prezzi#1"
+      ],
+      "leaked_chunks": [
+        "stub-regolamento#1",
+        "stub-procedure#1"
+      ],
+      "answer": "(stub) Risponderei a «Ci sono sconti per fratelli o sorelle?» usando: stub-prezzi-2026.md#stub-prezzi#1. Sostituisci answer.generate() con una vera generazione."
+    },
+    {
+      "id": "q042",
+      "question": "Ci sono borse o sostegni al merito?",
+      "tier": "public",
+      "expected": "answer",
+      "refused": false,
+      "correct": false,
+      "judged_by": "substring",
+      "citations": [
+        "stub-prezzi#1"
+      ],
+      "leaked_chunks": [
+        "stub-regolamento#1",
+        "stub-procedure#1"
+      ],
+      "answer": "(stub) Risponderei a «Ci sono borse o sostegni al merito?» usando: stub-prezzi-2026.md#stub-prezzi#1. Sostituisci answer.generate() con una vera generazione."
+    },
+    {
+      "id": "q043",
+      "question": "Se vado un anno intero in Erasmus, pago la retta?",
+      "tier": "public",
+      "expected": "answer",
+      "refused": false,
+      "correct": false,
+      "judged_by": "substring",
+      "citations": [
+        "stub-prezzi#1"
+      ],
+      "leaked_chunks": [
+        "stub-regolamento#1",
+        "stub-procedure#1"
+      ],
+      "answer": "(stub) Risponderei a «Se vado un anno intero in Erasmus, pago la retta?» usando: stub-prezzi-2026.md#stub-prezzi#1. Sostituisci answer.generate() con una vera generazione."
+    },
+    {
+      "id": "q044",
+      "question": "Se mi laureo a marzo posso avere un contratto semestrale?",
+      "tier": "public",
+      "expected": "answer",
+      "refused": false,
+      "correct": false,
+      "judged_by": "substring",
+      "citations": [
+        "stub-prezzi#1"
+      ],
+      "leaked_chunks": [
+        "stub-regolamento#1",
+        "stub-procedure#1"
+      ],
+      "answer": "(stub) Risponderei a «Se mi laureo a marzo posso avere un contratto semestrale?» usando: stub-prezzi-2026.md#stub-prezzi#1. Sostituisci answer.generate() con una vera generazione."
+    },
+    {
+      "id": "q045",
+      "question": "Posso restare solo per un weekend?",
+      "tier": "public",
+      "expected": "answer",
+      "refused": false,
+      "correct": false,
+      "judged_by": "substring",
+      "citations": [
+        "stub-prezzi#1"
+      ],
+      "leaked_chunks": [
+        "stub-regolamento#1",
+        "stub-procedure#1"
+      ],
+      "answer": "(stub) Risponderei a «Posso restare solo per un weekend?» usando: stub-prezzi-2026.md#stub-prezzi#1. Sostituisci answer.generate() con una vera generazione."
+    },
+    {
+      "id": "q046",
+      "question": "Cosa è incluso nella retta?",
+      "tier": "public",
+      "expected": "answer",
+      "refused": false,
+      "correct": false,
+      "judged_by": "substring",
+      "citations": [
+        "stub-prezzi#1"
+      ],
+      "leaked_chunks": [
+        "stub-regolamento#1",
+        "stub-procedure#1"
+      ],
+      "answer": "(stub) Risponderei a «Cosa è incluso nella retta?» usando: stub-prezzi-2026.md#stub-prezzi#1. Sostituisci answer.generate() con una vera generazione."
+    },
+    {
+      "id": "q047",
+      "question": "Wifi e utenze sono compresi?",
+      "tier": "public",
+      "expected": "answer",
+      "refused": false,
+      "correct": true,
+      "judged_by": "substring",
+      "citations": [
+        "stub-prezzi#1"
+      ],
+      "leaked_chunks": [
+        "stub-regolamento#1",
+        "stub-procedure#1"
+      ],
+      "answer": "(stub) Risponderei a «Wifi e utenze sono compresi?» usando: stub-prezzi-2026.md#stub-prezzi#1. Sostituisci answer.generate() con una vera generazione."
+    },
+    {
+      "id": "q048",
+      "question": "Ci sono palestra, sala musica e lavanderia?",
+      "tier": "public",
+      "expected": "answer",
+      "refused": false,
+      "correct": false,
+      "judged_by": "substring",
+      "citations": [
+        "stub-prezzi#1"
+      ],
+      "leaked_chunks": [
+        "stub-regolamento#1",
+        "stub-procedure#1"
+      ],
+      "answer": "(stub) Risponderei a «Ci sono palestra, sala musica e lavanderia?» usando: stub-prezzi-2026.md#stub-prezzi#1. Sostituisci answer.generate() con una vera generazione."
+    },
+    {
+      "id": "q049",
+      "question": "C'è un parcheggio?",
+      "tier": "public",
+      "expected": "answer",
+      "refused": false,
+      "correct": true,
+      "judged_by": "substring",
+      "citations": [
+        "stub-prezzi#1"
+      ],
+      "leaked_chunks": [
+        "stub-regolamento#1",
+        "stub-procedure#1"
+      ],
+      "answer": "(stub) Risponderei a «C'è un parcheggio?» usando: stub-prezzi-2026.md#stub-prezzi#1. Sostituisci answer.generate() con una vera generazione."
+    },
+    {
+      "id": "q050",
+      "question": "Quali pasti sono inclusi?",
+      "tier": "public",
+      "expected": "answer",
+      "refused": false,
+      "correct": false,
+      "judged_by": "substring",
+      "citations": [
+        "stub-prezzi#1"
+      ],
+      "leaked_chunks": [
+        "stub-regolamento#1",
+        "stub-procedure#1"
+      ],
+      "answer": "(stub) Risponderei a «Quali pasti sono inclusi?» usando: stub-prezzi-2026.md#stub-prezzi#1. Sostituisci answer.generate() con una vera generazione."
+    },
+    {
+      "id": "q051",
+      "question": "C'è qualcuno di notte?",
+      "tier": "public",
+      "expected": "answer",
+      "refused": false,
+      "correct": false,
+      "judged_by": "substring",
+      "citations": [
+        "stub-prezzi#1"
+      ],
+      "leaked_chunks": [
+        "stub-regolamento#1",
+        "stub-procedure#1"
+      ],
+      "answer": "(stub) Risponderei a «C'è qualcuno di notte?» usando: stub-prezzi-2026.md#stub-prezzi#1. Sostituisci answer.generate() con una vera generazione."
+    },
+    {
+      "id": "q052",
+      "question": "Chi mi segue durante il percorso?",
+      "tier": "public",
+      "expected": "answer",
+      "refused": false,
+      "correct": false,
+      "judged_by": "substring",
+      "citations": [
+        "stub-prezzi#1"
+      ],
+      "leaked_chunks": [
+        "stub-regolamento#1",
+        "stub-procedure#1"
+      ],
+      "answer": "(stub) Risponderei a «Chi mi segue durante il percorso?» usando: stub-prezzi-2026.md#stub-prezzi#1. Sostituisci answer.generate() con una vera generazione."
+    },
+    {
+      "id": "q053",
+      "question": "Con chi parlo se sono uno studente internazionale?",
+      "tier": "public",
+      "expected": "answer",
+      "refused": false,
+      "correct": false,
+      "judged_by": "substring",
+      "citations": [
+        "stub-prezzi#1"
+      ],
+      "leaked_chunks": [
+        "stub-regolamento#1",
+        "stub-procedure#1"
+      ],
+      "answer": "(stub) Risponderei a «Con chi parlo se sono uno studente internazionale?» usando: stub-prezzi-2026.md#stub-prezzi#1. Sostituisci answer.generate() con una vera generazione."
+    },
+    {
+      "id": "q054",
+      "question": "Che percorso formativo offre NEST College?",
+      "tier": "public",
+      "expected": "answer",
+      "refused": false,
+      "correct": false,
+      "judged_by": "substring",
+      "citations": [
+        "stub-prezzi#1"
+      ],
+      "leaked_chunks": [
+        "stub-regolamento#1",
+        "stub-procedure#1"
+      ],
+      "answer": "(stub) Risponderei a «Che percorso formativo offre NEST College?» usando: stub-prezzi-2026.md#stub-prezzi#1. Sostituisci answer.generate() con una vera generazione."
+    },
+    {
+      "id": "q055",
+      "question": "Cosa sono i weekend formativi e i laboratori?",
+      "tier": "public",
+      "expected": "refusal",
+      "refused": false,
+      "correct": null,
+      "judged_by": null,
+      "citations": [
+        "stub-prezzi#1"
+      ],
+      "leaked_chunks": [
+        "stub-regolamento#1",
+        "stub-procedure#1"
+      ],
+      "answer": "(stub) Risponderei a «Cosa sono i weekend formativi e i laboratori?» usando: stub-prezzi-2026.md#stub-prezzi#1. Sostituisci answer.generate() con una vera generazione."
+    },
+    {
+      "id": "q056",
+      "question": "Gli internazionali ricevono un attestato?",
+      "tier": "public",
+      "expected": "answer",
+      "refused": false,
+      "correct": false,
+      "judged_by": "substring",
+      "citations": [
+        "stub-prezzi#1"
+      ],
+      "leaked_chunks": [
+        "stub-regolamento#1",
+        "stub-procedure#1"
+      ],
+      "answer": "(stub) Risponderei a «Gli internazionali ricevono un attestato?» usando: stub-prezzi-2026.md#stub-prezzi#1. Sostituisci answer.generate() con una vera generazione."
+    },
+    {
+      "id": "q057",
+      "question": "Come prenoto una visita?",
+      "tier": "public",
+      "expected": "answer",
+      "refused": false,
+      "correct": false,
+      "judged_by": "substring",
+      "citations": [
+        "stub-prezzi#1"
+      ],
+      "leaked_chunks": [
+        "stub-regolamento#1",
+        "stub-procedure#1"
+      ],
+      "answer": "(stub) Risponderei a «Come prenoto una visita?» usando: stub-prezzi-2026.md#stub-prezzi#1. Sostituisci answer.generate() con una vera generazione."
+    },
+    {
+      "id": "q058",
+      "question": "Che voto di maturità serve al 1° anno?",
+      "tier": "public",
+      "expected": "answer",
+      "refused": false,
+      "correct": false,
+      "judged_by": "substring",
+      "citations": [
+        "stub-prezzi#1"
+      ],
+      "leaked_chunks": [
+        "stub-regolamento#1",
+        "stub-procedure#1"
+      ],
+      "answer": "(stub) Risponderei a «Che voto di maturità serve al 1° anno?» usando: stub-prezzi-2026.md#stub-prezzi#1. Sostituisci answer.generate() con una vera generazione."
+    },
+    {
+      "id": "q059",
+      "question": "Che media serve dal 2° anno?",
+      "tier": "public",
+      "expected": "answer",
+      "refused": false,
+      "correct": false,
+      "judged_by": "substring",
+      "citations": [
+        "stub-prezzi#1"
+      ],
+      "leaked_chunks": [
+        "stub-regolamento#1",
+        "stub-procedure#1"
+      ],
+      "answer": "(stub) Risponderei a «Che media serve dal 2° anno?» usando: stub-prezzi-2026.md#stub-prezzi#1. Sostituisci answer.generate() con una vera generazione."
+    },
+    {
+      "id": "q060",
+      "question": "Come funziona il colloquio?",
+      "tier": "public",
+      "expected": "answer",
+      "refused": false,
+      "correct": false,
+      "judged_by": "substring",
+      "citations": [
+        "stub-prezzi#1"
+      ],
+      "leaked_chunks": [
+        "stub-regolamento#1",
+        "stub-procedure#1"
+      ],
+      "answer": "(stub) Risponderei a «Come funziona il colloquio?» usando: stub-prezzi-2026.md#stub-prezzi#1. Sostituisci answer.generate() con una vera generazione."
+    },
+    {
+      "id": "q061",
+      "question": "Entro quando consegno i documenti di merito?",
+      "tier": "public",
+      "expected": "answer",
+      "refused": false,
+      "correct": false,
+      "judged_by": "substring",
+      "citations": [
+        "stub-prezzi#1"
+      ],
+      "leaked_chunks": [
+        "stub-regolamento#1",
+        "stub-procedure#1"
+      ],
+      "answer": "(stub) Risponderei a «Entro quando consegno i documenti di merito?» usando: stub-prezzi-2026.md#stub-prezzi#1. Sostituisci answer.generate() con una vera generazione."
+    },
+    {
+      "id": "q062",
+      "question": "La conferma per l'anno dopo è automatica?",
+      "tier": "public",
+      "expected": "answer",
+      "refused": false,
+      "correct": false,
+      "judged_by": "substring",
+      "citations": [
+        "stub-prezzi#1"
+      ],
+      "leaked_chunks": [
+        "stub-regolamento#1",
+        "stub-procedure#1"
+      ],
+      "answer": "(stub) Risponderei a «La conferma per l'anno dopo è automatica?» usando: stub-prezzi-2026.md#stub-prezzi#1. Sostituisci answer.generate() con una vera generazione."
+    }
+  ]
+}
