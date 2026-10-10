@@ -90,11 +90,67 @@ def test_search_matches_meaning_not_words(tmp_path: Path, monkeypatch: pytest.Mo
             "palestra#1", "La palestra apre alle 6 e chiude a mezzanotte.", "r.md", "public", "it"
         ),
     ]
+    _tiny_corpus(monkeypatch, tmp_path, corpus)
+    assert index.search("quanto costa una stanza singola?", "public", k=1)[0].id == "prezzi#1"
+
+
+def _tiny_corpus(monkeypatch: pytest.MonkeyPatch, tmp_path: Path, corpus: list[Chunk]) -> None:
+    """Search ``corpus`` instead of the real one, with its index in ``tmp_path``."""
     monkeypatch.setattr(index, "load_corpus", lambda: corpus)
     monkeypatch.setattr(index, "INDEX_DIR", tmp_path)
     monkeypatch.setattr(index, "EMBEDDINGS_PATH", tmp_path / "embeddings.npy")
     monkeypatch.setattr(index, "META_PATH", tmp_path / "meta.json")
-    assert index.search("quanto costa una stanza singola?", "public", k=1)[0].id == "prezzi#1"
+
+
+def test_keywords_normalise_the_way_people_type():
+    """Accents, stopwords and Italian endings must not stop a match."""
+    assert index._tokens("il colloquio si puo fare online?") == index._tokens(
+        "Il colloquio si può fare online"
+    )
+    assert index._tokens("camera singola") == index._tokens("camere singole")
+    assert "10.450" in index._tokens("Singola: 10.450 €") and "23:00" in index._tokens("alle 23:00")
+
+
+def test_without_a_model_search_ranks_by_keywords(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+    """`make setup-lite` and CI have no embedding model: still rank, never in document order."""
+    corpus = [
+        Chunk("palestra#1", "La palestra apre alle 6.", "r.md", "public", "it"),
+        Chunk("caparra#1", "La caparra è di 1.500 euro.", "p.md", "public", "it"),
+    ]
+    _tiny_corpus(monkeypatch, tmp_path, corpus)
+
+    def no_model(*_args: object) -> None:
+        raise RuntimeError("no model")
+
+    monkeypatch.setattr(index, "_rank_vector", no_model)
+    assert index.search("quanto è la caparra?", "public", k=2)[0].id == "caparra#1"
+
+
+@pytest.mark.skipif(
+    not embedding_model_cached(),
+    reason="embedding model not downloaded — run `make warm`",
+)
+def test_hybrid_only_reorders_what_meaning_picked(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+    """Keywords may sharpen the order of meaning's top 5, never change which chunks they are."""
+    corpus = [
+        Chunk(f"c#{n}", text, "x.md", "public", "it")
+        for n, text in enumerate(
+            [
+                "Retta annuale camera singola: 10.450 euro.",
+                "Camera doppia: 8.250 euro all'anno.",
+                "La caparra è di 1.500 euro.",
+                "Il silenzio è richiesto dalle 23 alle 7.",
+                "La palestra chiude a mezzanotte.",
+                "Gli ospiti vanno annunciati in reception.",
+                "Il bucato si fa al piano terra.",
+            ]
+        )
+    ]
+    _tiny_corpus(monkeypatch, tmp_path, corpus)
+    for question in ["quanto costa una singola?", "orari palestra", "posso invitare amici?"]:
+        vector = {c.id for c, _ in index.search_with_scores(question, "public", 5, "vector")}
+        hybrid = {c.id for c in index.search(question, "public", k=5)}
+        assert hybrid == vector
 
 
 def test_public_never_sees_private():
@@ -121,10 +177,7 @@ def test_chunk_with_broken_tier_is_hidden(tmp_path: Path, monkeypatch: pytest.Mo
         Chunk("ok#1", "Orari della mensa.", "a.md", "public", "it"),
         Chunk("typo#1", "Procedura morosità.", "b.md", "Staff ", "it"),  # type: ignore[arg-type]
     ]
-    monkeypatch.setattr(index, "load_corpus", lambda: corpus)
-    monkeypatch.setattr(index, "INDEX_DIR", tmp_path)
-    monkeypatch.setattr(index, "EMBEDDINGS_PATH", tmp_path / "embeddings.npy")
-    monkeypatch.setattr(index, "META_PATH", tmp_path / "meta.json")
+    _tiny_corpus(monkeypatch, tmp_path, corpus)
     for tier in TIERS:
         assert [c.id for c in index.search("morosità", tier, k=10)] == ["ok#1"]
 

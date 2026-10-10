@@ -15,9 +15,11 @@ W1-2.3  Hybrid search (BM25)         -> droppable
 How it works
 ------------
 One vector index over the whole corpus, saved under ``build/index/``. A search
-first drops every chunk the caller may not see, then ranks only what is left by
-cosine similarity to the question. A forbidden chunk is never scored, so no
-ranking bug can return it. The design and its trade-offs are in docs/INDEX.md.
+first drops every chunk the caller may not see, then ranks only what is left:
+meaning (cosine similarity) picks the best five, and keywords (BM25) re-order
+them so exact words and numbers rise. A forbidden chunk is never scored, so no
+ranking bug can return it. The design, its measurements and its trade-offs are
+in docs/INDEX.md.
 
 There is a second filter downstream in ``pipeline.py``. It is not our safety
 net: defence in depth means two independent layers that both work.
@@ -27,7 +29,10 @@ from __future__ import annotations
 
 import hashlib
 import json
+import math
 import os
+import re
+import unicodedata
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Any, Literal
 
@@ -191,19 +196,33 @@ def search(q: str, tier: Tier = "public", k: int = DEFAULT_K) -> list[Chunk]:
       Italian. Measure it. Do not take anyone's word for it, including this
       docstring's.
 
-    Scores are cosine similarities, roughly 0..1: see :func:`search_with_scores`.
+    Meaning finds the candidates, keywords sharpen their order: see
+    :func:`search_with_scores` and docs/INDEX.md.
     """
-    return [chunk for chunk, _ in search_with_scores(q, tier, k)]
+    return [chunk for chunk, _ in search_with_scores(q, tier, k, "hybrid")]
+
+
+Method = Literal["hybrid", "vector", "keyword"]
 
 
 def search_with_scores(
-    q: str, tier: Tier = "public", k: int = DEFAULT_K
+    q: str, tier: Tier = "public", k: int = DEFAULT_K, method: Method = "hybrid"
 ) -> list[tuple[Chunk, float]]:
-    """:func:`search`, with each chunk's similarity to ``q``.
+    """:func:`search`, with each chunk's score. ``method`` picks the ranking.
 
-    The score is the cosine similarity between question and chunk: 1.0 would be
-    identical meaning, around 0.2 is "unrelated". On the fixtures a right answer
-    usually scores 0.35–0.65; below ~0.3 treat the top result as a guess.
+    ``"vector"``: cosine similarity between question and chunk. With e5-small
+    almost everything lands between 0.78 and 0.90: the order is meaningful, the
+    absolute value is not a refusal signal (see docs/INDEX.md).
+
+    ``"keyword"``: BM25 over the words of question and chunk. 0 means no word in
+    common; there is no upper bound.
+
+    ``"hybrid"`` (what :func:`search` uses): meaning picks the top
+    :data:`RERANK_DEPTH`, keywords re-order them, fused by position
+    (:func:`_fuse`). The score only orders results; it is not comparable with
+    the other two.
+
+    With no embedding model installed every method falls back to ``"keyword"``.
     """
     tier_rank(tier)  # an unknown caller tier is a bug upstream: fail loudly, show nothing
     # Tier filter first, before any ranking: a chunk the caller may not see is
@@ -213,19 +232,32 @@ def search_with_scores(
     if not allowed or k <= 0:
         return []
 
-    try:
-        vectors, _ = build_index(corpus)
-        query = _embed([q], "query")[0]
-    except (ImportError, RuntimeError):
-        # `make setup-lite` or CI: no embedding model. Stay safe and runnable —
-        # tier-filtered, in document order — rather than break the pipeline.
-        return [(corpus[i], 0.0) for i in allowed[:k]]
+    keyword = _rank_keyword(q, corpus, allowed)
+    if method == "keyword":
+        ranked = keyword
+    else:
+        try:
+            vector = _rank_vector(q, corpus, allowed)
+        except (ImportError, RuntimeError):
+            # `make setup-lite` or CI: no embedding model. Keywords need nothing
+            # installed, so rank by those rather than break the pipeline.
+            vector = None
+        if vector is None:
+            ranked = keyword
+        elif method == "vector":
+            ranked = vector
+        else:
+            # A chunk sharing no word with the question has no keyword evidence;
+            # its place in that list is document order, i.e. noise. Leave it out.
+            # Keywords only re-order meaning's top RERANK_DEPTH: they can promote
+            # an exact match (a price, "cena comunitaria") but never push a chunk
+            # out of what ANSWER reads, nor pull in one meaning did not pick.
+            # A chunk sharing no word with the question has no keyword evidence.
+            head = {i for i, _ in vector[:RERANK_DEPTH]}
+            matched = [(i, score) for i, score in keyword if score > 0 and i in head]
+            ranked = _fuse([vector, matched], [1.0, KEYWORD_WEIGHT], FUSION_K)
 
-    scores = vectors[allowed] @ query
-    # Stable sort on the negated score: ties keep document order, so the same
-    # query over the same corpus always ranks the same way.
-    order = (-scores).argsort(kind="stable")[:k]
-    results = [(corpus[allowed[i]], float(scores[i])) for i in order]
+    results = [(corpus[i], score) for i, score in ranked[:k]]
 
     # Belt and braces, still inside INDEX: if a future change to the ranking ever
     # mixes up positions, fail closed (the pipeline turns this into a refusal)
@@ -233,6 +265,124 @@ def search_with_scores(
     if any(not _visible(chunk, tier) for chunk, _ in results):
         raise RuntimeError("index returned a chunk above the caller's tier")
     return results
+
+
+def _rank_vector(q: str, corpus: list[Chunk], allowed: list[int]) -> list[tuple[int, float]]:
+    """``allowed`` corpus positions, best first, scored by cosine similarity to ``q``."""
+    vectors, _ = build_index(corpus)
+    scores = vectors[allowed] @ _embed([q], "query")[0]
+    # Stable sort on the negated score: ties keep document order, so the same
+    # query over the same corpus always ranks the same way.
+    order = (-scores).argsort(kind="stable")
+    return [(allowed[i], float(scores[i])) for i in order]
+
+
+# ---------------------------------------------------------------------------
+# Keyword ranking: BM25, in plain Python so it runs with nothing installed
+# ---------------------------------------------------------------------------
+
+_WORD = re.compile(r"\d+(?:[.,:/]\d+)*|\w+")
+"""A number with its separators stays one token (10.450, 23:00, 31/07): those
+are exactly the tokens embeddings blur and a resident types verbatim."""
+
+_token_cache: dict[str, list[list[str]]] = {}  # corpus fingerprint -> tokens per chunk
+
+
+_STOPWORDS = frozenset(
+    """a ad al alla alle allo agli ai anche che chi ci con cosa come da dal dalla
+    dei del della delle dello degli di e ed gli ha ho i il in io la le lo ma mi
+    ne nei nel nella non o per piu puo se si sia sono su sul sulla ti tra tu un
+    una uno vi
+    an and are at be by can do does for from how i in is it of on or the to what
+    when where which who will with you your""".split()
+)
+"""Words that match everywhere and therefore mean nothing, Italian and English."""
+
+
+def _tokens(text: str) -> list[str]:
+    """Words of ``text``, normalised so that the way a resident types still matches.
+
+    Accents are dropped (``puo`` matches ``può``), stopwords removed, and longer
+    words lose their final vowel so ``singola``, ``singole`` and ``singoli`` are
+    one word. Crude next to a real stemmer, but it is twelve characters of code
+    and Italian inflects mostly in the last vowel.
+    """
+    plain = unicodedata.normalize("NFKD", text.lower())
+    plain = "".join(ch for ch in plain if not unicodedata.combining(ch))
+    words = []
+    for word in _WORD.findall(plain):
+        if word in _STOPWORDS:
+            continue
+        if len(word) > 4 and word[-1] in "aeio" and not word[0].isdigit():
+            word = word[:-1]
+        words.append(word)
+    return words
+
+
+def _bm25(query: list[str], docs: list[list[str]], k1: float = 1.5, b: float = 0.75) -> list[float]:
+    """Okapi BM25 score of every doc for ``query``.
+
+    A word counts more when it is rare across the docs (``idf``), with
+    diminishing returns for repeating it (``k1``), and long docs are not
+    rewarded just for being long (``b``).
+    """
+    n = len(docs)
+    avg_len = sum(map(len, docs)) / n or 1.0
+    terms = set(query)
+    df = {t: sum(t in doc for doc in map(set, docs)) for t in terms}
+    idf = {t: math.log(1 + (n - df[t] + 0.5) / (df[t] + 0.5)) for t in terms}
+    scores = []
+    for doc in docs:
+        tf = {t: doc.count(t) for t in terms}
+        norm = k1 * (1 - b + b * len(doc) / avg_len)
+        scores.append(sum(idf[t] * tf[t] * (k1 + 1) / (tf[t] + norm) for t in terms if tf[t]))
+    return scores
+
+
+def _rank_keyword(q: str, corpus: list[Chunk], allowed: list[int]) -> list[tuple[int, float]]:
+    """``allowed`` corpus positions, best first, scored by BM25 against ``q``.
+
+    Word statistics are computed over the allowed chunks only, so what a caller
+    may not see cannot even nudge their scores.
+    """
+    key = _fingerprint(corpus, "keyword")
+    if key not in _token_cache:
+        _token_cache[key] = [_tokens(chunk.text) for chunk in corpus]
+    tokens = _token_cache[key]
+    scores = _bm25(_tokens(q), [tokens[i] for i in allowed])
+    order = sorted(range(len(allowed)), key=lambda j: -scores[j])  # stable: ties keep doc order
+    return [(allowed[j], scores[j]) for j in order]
+
+
+KEYWORD_WEIGHT = 0.5
+"""How much the keyword ranking counts in the fusion, with meaning counting 1.
+Chosen on the fixtures, checked on the real documents: docs/INDEX.md, W1-2.3."""
+
+FUSION_K = 2
+"""The ``k`` in reciprocal rank fusion: how quickly a lower position loses weight.
+The paper's 60 suits long lists; within five candidates it makes 1st and 5th
+nearly equal (1/61 vs 1/65), so keywords could hardly re-order anything."""
+
+RERANK_DEPTH = 5
+"""Keywords may re-order only this many of meaning's best chunks. Equal to the
+``k`` ANSWER reads, so the chunks it gets are exactly meaning's top 5."""
+
+
+def _fuse(
+    rankings: list[list[tuple[int, float]]], weights: list[float], k: int = 60
+) -> list[tuple[int, float]]:
+    """Reciprocal rank fusion: each ranking gives a chunk ``weight / (k + position)``.
+
+    Positions, not scores, because cosine (0.78–0.90) and BM25 (0 to anything)
+    are not on the same scale. ``k = 60`` is the value from the original paper
+    (Cormack et al., 2009): it stops first place in one list from outweighing
+    good places in both.
+    """
+    fused: dict[int, float] = {}
+    for ranking, weight in zip(rankings, weights, strict=True):
+        for position, (i, _) in enumerate(ranking, start=1):
+            fused[i] = fused.get(i, 0.0) + weight / (k + position)
+    return sorted(fused.items(), key=lambda item: (-item[1], item[0]))  # ties: doc order
 
 
 def _visible(chunk: Chunk, tier: Tier) -> bool:
