@@ -12,7 +12,7 @@
 | INGEST | 1 | STUB | STUB | | |
 | INDEX | 2 | STUB | REAL | | |
 | ANSWER | 3 | STUB | REAL | | |
-| IDENTITY | 4 | STUB | STUB | | |
+| IDENTITY | 4 | STUB | STUB | REAL | |
 | BOT | 4 | STUB | REAL | | |
 | EVAL | 5 | STUB | STUB | | |
 | GUARDRAILS | 5 | STUB | STUB | | |
