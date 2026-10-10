@@ -1025,9 +1025,9 @@
     comunque rifiutare di quantificare la detrazione per danni.
 
 # --- Staff: secretariat procedures (extension). ----------------------------
-# Questions a Nest staff member asks while working. Facts come from
-# procedure-segreteria.md, which is SYNTHETIC and staff-only, hence
-# corpus: fixtures. A staff user may also read resident and public documents:
+# Questions a Nest staff member asks while working, written by us from
+# procedure-segreteria.md (hence source: document, not staff: no staff member
+# wrote them). That file is SYNTHETIC and staff-only, hence corpus: fixtures. A staff user may also read resident and public documents:
 # the last block checks that those are still reachable at this tier.
 
 - id: q095
@@ -1037,7 +1037,7 @@
   expected_sources: [procedure-segreteria.md]
   expected_answer: "promemoria"
   corpus: fixtures
-  source: staff
+  source: document
   notes: "Il primo giorno lavorativo dopo la scadenza si invia un promemoria via email."
 
 - id: q096
@@ -1047,7 +1047,7 @@
   expected_sources: [procedure-segreteria.md]
   expected_answer: "15 giorni"
   corpus: fixtures
-  source: staff
+  source: document
   notes: "Dopo 15 giorni dalla scadenza, in copia alla direzione."
 
 - id: q097
@@ -1057,7 +1057,7 @@
   expected_sources: [procedure-segreteria.md]
   expected_answer: "due mensilità"
   corpus: fixtures
-  source: staff
+  source: document
   notes: "Dopo due mensilità non pagate. Non confondere con il sollecito dei 15 giorni (q096)."
 
 - id: q098
@@ -1065,10 +1065,13 @@
   tier: staff
   expect: answer
   expected_sources: [procedure-segreteria.md]
-  expected_answer: "cinque giorni lavorativi"
+  expected_answer: "cinque giorni"
   corpus: fixtures
-  source: staff
-  notes: "Entro cinque giorni lavorativi dall'apertura della posizione; il residente viene convocato."
+  source: document
+  notes: >
+    Entro cinque giorni lavorativi dall'apertura della posizione; il residente
+    viene convocato. Stesso fatto di q027 (che lo chiede in modo indiretto), quindi
+    pesa due volte nel punteggio. "cinque giorni" come q027: "5 giorni" non passa.
 
 - id: q099
   question: "Posso risolvere il contratto a chi non paga da mesi?"
@@ -1077,7 +1080,7 @@
   expected_sources: [procedure-segreteria.md]
   expected_answer: "autorizzazione scritta"
   corpus: fixtures
-  source: staff
+  source: document
   notes: "È l'ultima opzione e serve l'autorizzazione scritta della direzione. La segreteria non può deciderlo da sola."
 
 - id: q100
@@ -1087,7 +1090,7 @@
   expected_sources: [procedure-segreteria.md]
   expected_answer: "sei mesi"
   corpus: fixtures
-  source: staff
+  source: document
   notes: "Sì, se la difficoltà è documentata: la direzione può concedere fino a sei mesi, formalizzato per iscritto."
 
 - id: q101
@@ -1097,7 +1100,7 @@
   expected_sources: [procedure-segreteria.md]
   expected_answer: "gennaio"
   corpus: fixtures
-  source: staff
+  source: document
   notes: "In un'unica finestra a gennaio."
 
 - id: q102
@@ -1107,8 +1110,12 @@
   expected_sources: [procedure-segreteria.md]
   expected_answer: "salute"
   corpus: fixtures
-  source: staff
-  notes: "Ordine: motivi di salute documentati, conflitti di convivenza già segnalati per iscritto, anzianità di residenza."
+  source: document
+  notes: >
+    Ordine: motivi di salute documentati, conflitti di convivenza già segnalati
+    per iscritto, anzianità di residenza. Il controllo a sottostringa non verifica
+    l'ordine: una risposta che mette l'anzianità prima della salute passa
+    comunque. Lo giudica l'LLM judge (W1-5.2).
 
 - id: q103
   question: "A marzo mi chiedono un cambio camera, in quali casi lo posso accettare?"
@@ -1117,7 +1124,7 @@
   expected_sources: [procedure-segreteria.md]
   expected_answer: "conflitti"
   corpus: fixtures
-  source: staff
+  source: document
   notes: >
     Fuori finestra solo per salute documentata o conflitti di convivenza già
     segnalati per iscritto; l'anzianità non basta. Una risposta che accetta
@@ -1130,7 +1137,7 @@
   expected_sources: [procedure-segreteria.md]
   expected_answer: "tre giorni"
   corpus: fixtures
-  source: staff
+  source: document
   notes: "Entro tre giorni dalla riconsegna delle chiavi, con fotografie datate."
 
 - id: q105
@@ -1140,7 +1147,7 @@
   expected_sources: [procedure-segreteria.md]
   expected_answer: "30 giorni"
   corpus: fixtures
-  source: staff
+  source: document
   notes: "Per iscritto entro 30 giorni; la stima usa il listino interno e l'importo è detratto dalla caparra."
 
 - id: q106
@@ -1150,7 +1157,7 @@
   expected_sources: [procedure-segreteria.md]
   expected_answer: "usura normale"
   corpus: fixtures
-  source: staff
+  source: document
   notes: >
     No: pareti da ritinteggiare dopo un anno sono usura normale e non sono
     addebitabili. Il controllo a sottostringa non distingue il no dal sì;
@@ -1163,7 +1170,7 @@
   expected_sources: [procedure-segreteria.md]
   expected_answer: "due mesi"
   corpus: fixtures
-  source: staff
+  source: document
   notes: "Preavviso di due mesi."
 
 - id: q108
@@ -1173,7 +1180,7 @@
   expected_sources: [procedure-segreteria.md]
   expected_answer: "una mensilità"
   corpus: fixtures
-  source: staff
+  source: document
   notes: "Una mensilità. La direzione può derogare per trasferimento di sede universitaria, motivi di salute o gravi motivi familiari."
 
 - id: q109
@@ -1183,7 +1190,7 @@
   expected_sources: [procedure-segreteria.md]
   expected_answer: "reperibile"
   corpus: fixtures
-  source: staff
+  source: document
   notes: "Al reperibile di turno secondo il calendario mensile. Il calendario e i numeri non sono nei documenti: la risposta non deve inventarli."
 
 - id: q110
@@ -1193,7 +1200,7 @@
   expected_sources: [procedure-segreteria.md]
   expected_answer: "consenso scritto"
   corpus: fixtures
-  source: staff
+  source: document
   notes: "No: la segreteria non comunica dati dei residenti a terzi, familiari compresi, senza consenso scritto del residente."
 
 # --- Staff: reading resident and public documents. -------------------------
@@ -1205,7 +1212,7 @@
   expected_sources: [regolamento-casa.md]
   expected_answer: "15 €"
   corpus: fixtures
-  source: staff
+  source: document
   notes: "15 € a notte, richiesta con almeno 24 ore di anticipo (documento resident, leggibile dallo staff)."
 
 - id: q112
@@ -1215,7 +1222,7 @@
   expected_sources: [prezzi-2026.md]
   expected_answer: "sospesa"
   corpus: fixtures
-  source: staff
+  source: document
   notes: "Retta sospesa al 100% per un anno intero fuori (documento public). Per un solo semestre si paga la retta semestrale."
 
 # --- Staff: must be REFUSED. -----------------------------------------------
@@ -1228,9 +1235,13 @@
   tier: staff
   expect: refusal
   expected_sources: []
+  forbidden: ["%"]
   corpus: fixtures
-  source: staff
-  notes: "Le procedure descrivono i solleciti ma non prevedono interessi né penali. Non inventare una percentuale."
+  source: document
+  notes: >
+    Le procedure descrivono i solleciti ma non prevedono interessi né penali.
+    Non inventare una percentuale. Qui `forbidden` non segnala una fuga di tier
+    ma un'invenzione: un rifiuto che cita comunque un tasso non vale.
 
 - id: q114
   question: "Quanto costa ripristinare una parete danneggiata secondo il listino interno?"
@@ -1238,5 +1249,5 @@
   expect: refusal
   expected_sources: []
   corpus: fixtures
-  source: staff
+  source: document
   notes: "procedure-segreteria.md cita il listino interno ma non ne riporta gli importi. Il bot deve dirlo."
