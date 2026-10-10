@@ -225,8 +225,9 @@ def search_with_scores(
 
     ``"hybrid"`` (what :func:`search` uses): meaning picks the top
     :data:`RERANK_DEPTH`, keywords re-order them, fused by position
-    (:func:`_fuse`). The score only orders results; it is not comparable with
-    the other two.
+    (:func:`_fuse`); keywords' best match gets the last of those places if
+    meaning missed it (:func:`_rescue`). The score only orders results; it is
+    not comparable with the other two.
 
     With no embedding model installed every method falls back to ``"keyword"``.
     """
@@ -261,6 +262,7 @@ def search_with_scores(
             head = {i for i, _ in vector[:RERANK_DEPTH]}
             matched = [(i, score) for i, score in keyword if score > 0 and i in head]
             ranked = _fuse([vector, matched], [1.0, KEYWORD_WEIGHT], FUSION_K)
+            ranked = _rescue(ranked, keyword)
 
     results = [(corpus[i], score) for i, score in ranked[:k]]
 
@@ -371,6 +373,28 @@ nearly equal (1/61 vs 1/65), so keywords could hardly re-order anything."""
 RERANK_DEPTH = 5
 """Keywords may re-order only this many of meaning's best chunks. Equal to the
 ``k`` ANSWER reads, so the chunks it gets are exactly meaning's top 5."""
+
+
+def _rescue(
+    ranked: list[tuple[int, float]], keyword: list[tuple[int, float]]
+) -> list[tuple[int, float]]:
+    """Give keywords' best match the last of the top :data:`RERANK_DEPTH` places, if missing.
+
+    A one- or two-word question ("singola?") carries almost no meaning for a
+    vector: meaning can rank the right chunk 14th while BM25 ranks it 1st, and
+    re-ordering meaning's top five cannot bring it back. This does. Places 1 to
+    4 never move, so the strongest results are untouched. Each position keeps
+    its old score, so scores still descend.
+    """
+    if not keyword or keyword[0][1] <= 0:
+        return ranked
+    best = keyword[0][0]
+    order = [i for i, _ in ranked]
+    if best in order[:RERANK_DEPTH] or len(order) <= RERANK_DEPTH:
+        return ranked
+    order.remove(best)
+    order.insert(RERANK_DEPTH - 1, best)
+    return [(i, score) for i, (_, score) in zip(order, ranked, strict=True)]
 
 
 def _fuse(

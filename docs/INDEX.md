@@ -355,3 +355,51 @@ never-seen questions from the start.
 **For TEAM 5:** add the real PDF names to `expected_sources` for q031–q062 (or tag
 them `corpus: fixtures`). As they stand, `make eval` on `data/` counts them as
 retrieval misses whatever the search does.
+
+## Short questions and messages that ask two things
+
+Two complaints from using the bot: very short questions find nothing, and a
+message that asks two things gets half an answer. Every measurement here goes
+through `index.search()`, the function the pipeline calls.
+
+### Keyword rescue (shipped)
+
+*"singola?"* says almost nothing to a vector: on Team 1's chunks meaning ranked
+the price chunk 14th, while BM25 ranked it 1st. Keywords only re-order meaning's
+top five, so they could not bring it back. Now **keywords' best match takes the
+fifth place if meaning missed it**; places 1–4 never move.
+
+To test it fairly, each labelled question was reduced to its single most
+distinctive word (*"Quanto costa una camera singola?"* → *"singola?"*):
+
+| Right chunk in the top 5 | before | **with rescue** |
+|---|---|---|
+| One-word questions, Team 1 chunks (41) | 24% | **32%** |
+| One-word questions, fixtures (46) | 50% | **52%** |
+| Every normal question set (first place, top 3, top 5) | — | unchanged |
+
+*"singola?"* now brings the price chunk into the top 5 (5th, from 14th). The one
+cost: on two-question messages in the fixtures, one pair in 22 lost its second
+answer to the rescued chunk.
+
+### Splitting a message into its questions (tried, not shipped)
+
+We split messages at `?`, `;` and "e quando / e come…", searched each part, and
+took the results in turns. Tested on two-question messages built from pairs of
+labelled questions (*"X? Y?"*, *"X e Y?"*):
+
+| Both answers in the 5 chunks ANSWER reads | no splitting | splitting |
+|---|---|---|
+| Team 1 chunks (20 pairs) | **60%** | 55% |
+| Fixtures (22 pairs) | 91% | **100%** |
+
+Worse on the real documents, so not shipped. Five places shared by two or
+three searches leave each part about two, and an answer that is third in its own
+search is lost. Giving ANSWER more chunks does not change the picture either:
+without splitting, both answers are there 60% of the time at k=5, 8 and 10 alike.
+**The pairs that fail contain one question that is hard on its own**, so the fix
+is better retrieval for single questions, not splitting.
+
+**For TEAM 3:** the search delivers both answers 60% of the time and at least one
+90% of the time. If the bot gives no answer at all to a two-part message, check
+whether ANSWER refuses the whole reply when only one part is in the chunks.
