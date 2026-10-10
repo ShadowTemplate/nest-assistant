@@ -28,12 +28,20 @@ rubbish chunks, that is a real finding — tell them, do not paper over it here.
 
 from __future__ import annotations
 
+import re
+
+from .. import llm
 from ..config import DEFAULT_LANG, PROMPTS_DIR
 from ..schema import Answer, Chunk
 
 OWNER = "TEAM 3 — ANSWER"
 INTERFACE = "answer.generate(q: str, chunks: list[Chunk], lang: str) -> Answer"
-STATUS = "stub"  # flip to "real" when you replace the body below. `make board` reads this.
+STATUS = "real"  # `make board` reads this.
+
+REFUSAL_MARKER = "NON_TROVATO"
+"""What the model writes when the documents do not answer. Matched, never shown."""
+
+_CITATION_RE = re.compile(r"\s*\[([^\[\]]+#[^\[\]]+)\]")
 
 REFUSAL_IT = (
     "Non ho trovato questa informazione nei documenti di Nest. "
@@ -87,22 +95,31 @@ def generate(q: str, chunks: list[Chunk], lang: str = DEFAULT_LANG) -> Answer:
     :func:`load_system_prompt` to get your prompt. Both exist so that October's
     hosted model and October-2027's self-hosted one look identical from here.
 
-    The stub below echoes what it *would* have used, so that CHAT, EVAL and
-    INDEX all have a working pipeline before you have written anything.
+    W1-3.1: grounded generation. Refusal thresholds are W1-3.2.
     """
+    refusal = Answer(text=REFUSAL_IT, citations=[], confidence=0.0, refused=True)
     if not chunks:
-        return Answer(text=REFUSAL_IT, citations=[], confidence=0.0, refused=True)
+        return refusal
 
-    preview = "; ".join(f"{c.source}#{c.id}" for c in chunks[:3])
-    return Answer(
-        text=(
-            f"(stub) Risponderei a «{q}» usando: {preview}. "
-            "Sostituisci answer.generate() con una vera generazione."
-        ),
-        citations=[c.id for c in chunks],
-        confidence=0.0,
-        refused=False,
-    )
+    prompt = f"## Documenti\n\n{format_context(chunks)}\n\n## Domanda\n\n{q}"
+    try:
+        raw = llm.complete(prompt, system=load_system_prompt(lang))
+    except Exception:  # generate() never raises: an honest refusal keeps the bot up
+        return refusal
+
+    if not raw or REFUSAL_MARKER in raw:
+        return refusal
+
+    supplied = {c.id for c in chunks}
+    cited = [cid for cid in dict.fromkeys(_CITATION_RE.findall(raw)) if cid in supplied]
+    text = _CITATION_RE.sub("", raw)
+    text = re.sub(r"[ \t]+([.,;:!?])", r"\1", re.sub(r"[ \t]{2,}", " ", text)).strip()
+
+    # No valid citation means the model spoke from memory: treat it as a refusal.
+    if not cited or not text:
+        return refusal
+
+    return Answer(text=text, citations=cited, confidence=0.5, refused=False)
 
 
 __all__ = [
