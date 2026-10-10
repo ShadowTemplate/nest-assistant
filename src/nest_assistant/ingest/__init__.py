@@ -26,6 +26,8 @@ from __future__ import annotations
 
 import logging
 import re
+from collections.abc import Callable, Iterator
+from contextlib import contextmanager
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -60,6 +62,9 @@ class _Entry:
     lang: str
 
 
+_LANG = re.compile(r"^[a-z]{2}$")
+
+
 def _load_manifest(src: Path) -> dict[str, _Entry]:
     """Read ``src/manifest.yaml``. Without one nothing can be ingested."""
     path = src / "manifest.yaml"
@@ -72,15 +77,25 @@ def _load_manifest(src: Path) -> dict[str, _Entry]:
     if not isinstance(raw, dict) or not isinstance(raw.get("documents"), list):
         raise ValueError(f"{path}: expected a top-level 'documents:' list")
     entries: dict[str, _Entry] = {}
+    problems: list[str] = []
     for item in raw["documents"]:
         if not isinstance(item, dict):
-            raise ValueError(f"{path}: every document entry must be a mapping, got {item!r}")
+            problems.append(f"entry is not a mapping: {item!r}")
+            continue
         name, tier, lang = item.get("filename"), item.get("tier"), item.get("lang")
-        if not name or tier not in TIERS or lang not in {"it", "en"}:
-            raise ValueError(f"{path}: bad entry {name!r}: tier={tier!r} lang={lang!r}")
-        if name in entries:
-            raise ValueError(f"{path}: {name} appears twice")
-        entries[name] = _Entry(name, tier, lang)
+        if not isinstance(name, str) or not name:
+            problems.append(f"entry without a filename: {item!r}")
+        elif tier not in TIERS:
+            problems.append(f"{name}: tier={tier!r}, expected one of {list(TIERS)}")
+        elif not isinstance(lang, str) or not _LANG.match(lang):
+            # YAML reads an unquoted `no` as False, so a Norwegian entry needs quotes.
+            problems.append(f"{name}: lang={lang!r}, expected a two-letter code like 'it'")
+        elif name in entries:
+            problems.append(f"{name} appears twice")
+        else:
+            entries[name] = _Entry(name, tier, lang)
+    if problems:
+        raise ValueError(f"{path}: " + "; ".join(problems))
     return entries
 
 
@@ -90,31 +105,62 @@ def _documents(src: Path) -> list[Path]:
         for p in sorted(src.rglob("*"))
         if p.is_file() and p.name not in _NOT_DOCUMENTS and not p.name.startswith(".")
     ]
-    names = [p.name for p in found]
+    return found
+
+
+def _check_unique(documents: list[Path], manifest: dict[str, _Entry]) -> None:
+    """Two listed files with one name would share ids. Unlisted files are never ingested."""
+    names = [p.name for p in documents if p.name in manifest]
     dupes = {n for n in names if names.count(n) > 1}
     if dupes:
         raise ValueError(f"same filename in two folders, citations would collide: {sorted(dupes)}")
-    return found
 
 
 # ---------------------------------------------------------------------------
 # Extraction and cleaning
 # ---------------------------------------------------------------------------
-def _read_pages(path: Path) -> list[tuple[str, str]]:
-    """``(text, layout_text)`` per page. Layout text only exists for PDFs.
+_Layout = Callable[[], str]
+"""Layout text of one page, computed on first call: it is slow, and not every page needs it."""
+
+
+@contextmanager
+def _quiet_pypdf() -> Iterator[None]:
+    """Silence pypdf for the duration of one document, then put the level back.
+
+    Layout mode warns once per rotated label on every map page; it is noise. The
+    level is restored so a corrupt or encrypted PDF elsewhere in the process is
+    still reported.
+    """
+    logger = logging.getLogger("pypdf")
+    before = logger.level
+    logger.setLevel(logging.ERROR)
+    try:
+        yield
+    finally:
+        logger.setLevel(before)
+
+
+def _no_layout() -> str:
+    return ""
+
+
+def _read_pages(path: Path) -> list[tuple[str, _Layout]]:
+    """``(text, layout)`` per page; ``layout()`` gives layout text, PDFs only.
 
     Plain extraction keeps columns apart but can emit a page title after the page
     body; layout extraction keeps the title on top but interleaves columns. We
-    read with the first and use the second only to put the title back.
+    read with the first and use the second only to put the title back. Call this
+    and consume the pages inside ``_quiet_pypdf()``.
     """
     suffix = path.suffix.lower()
     if suffix == ".pdf":
         from pypdf import PdfReader
 
-        # Layout mode warns once per rotated label on every map page; it is noise.
-        logging.getLogger("pypdf").setLevel(logging.ERROR)
         return [
-            (page.extract_text() or "", page.extract_text(extraction_mode="layout") or "")
+            (
+                page.extract_text() or "",
+                lambda page=page: page.extract_text(extraction_mode="layout") or "",
+            )
             for page in PdfReader(path).pages
         ]
     if suffix == ".docx":
@@ -126,14 +172,20 @@ def _read_pages(path: Path) -> list[tuple[str, str]]:
             if isinstance(block, Table):
                 for row in block.rows:
                     cells: list[str] = []
-                    for cell in row.cells:  # merged cells repeat; keep one
-                        if cell.text.strip() and cell.text.strip() not in cells:
+                    seen: list[object] = []
+                    for cell in row.cells:
+                        # A merged cell is returned once per column it spans. Compare the
+                        # underlying element, not the text: "8.250 | 8.250" is two values.
+                        if any(cell._tc is tc for tc in seen):
+                            continue
+                        seen.append(cell._tc)
+                        if cell.text.strip():
                             cells.append(cell.text.strip())
                     lines.append(" | ".join(cells))
             else:
                 lines.append(block.text)
-        return [("\n".join(lines), "")]
-    return [(path.read_text(encoding="utf-8"), "")]
+        return [("\n".join(lines), _no_layout)]
+    return [(path.read_text(encoding="utf-8"), _no_layout)]
 
 
 def _norm(line: str) -> str:
@@ -171,12 +223,21 @@ _DATES = re.compile(
     r"september|october|november|december)",
     re.I,
 )
+_DAY_OR_MONTH = re.compile(
+    r"\b(lunedì|martedì|mercoledì|giovedì|venerdì|sabato|domenica|gennaio|febbraio|marzo|aprile|"
+    r"maggio|giugno|luglio|agosto|settembre|ottobre|novembre|dicembre|monday|tuesday|wednesday|"
+    r"thursday|friday|saturday|sunday|january|february|march|april|june|july|august|"
+    r"september|october|november|december)\b",
+    re.I,
+)
 _PRICE_OR_TIME = re.compile(r"[€$£]|\b(euro|eur)\b|\b\d{1,2}[:.]\d{2}\b", re.I)
 
 
 def _is_prose(line: str) -> bool:
-    """A sentence, not a label: several words, and not set in capitals."""
-    return len(line.split()) >= 4 and not _is_upper(line)
+    """A statement, not a label: a sentence, a ``Key: value`` line, or a day or month."""
+    if _is_upper(line):
+        return False
+    return len(line.split()) >= 4 or bool(re.search(r"\w: \S", line) or _DAY_OR_MONTH.search(line))
 
 
 def _is_label_page(lines: list[str]) -> bool:
@@ -261,39 +322,53 @@ def _layout_title(page: list[str], layout: str) -> str | None:
     return None
 
 
+_EDGE = 3
+"""Furniture sits in the first or last few lines of a page."""
+
+
 def _clean_pages(
-    pages: list[tuple[str, str]], name: str = "", *, pdf: bool = False
+    pages: list[tuple[str, _Layout]], name: str = "", *, pdf: bool = False
 ) -> list[list[str]]:
     """Per page: normalised lines with furniture removed.
 
-    Furniture is any line that repeats on at least half the pages (running
-    headers, footers, the ``Guida / Salvastudente`` banner), page numbers,
-    "back to index" links and form feeds. Repeated lines only count in documents
-    of three or more pages, so a short text file can never lose a line to that
-    rule. Page numbers are only removed from PDFs, and only from the first or last
-    line of a page: elsewhere a line that is just ``450`` is a value, and in
-    Markdown or text a line that is just ``12`` or ``1/2`` is content.
+    Furniture is any line that, on at least half the pages, is among the first or
+    last three lines (running headers, footers, the ``Guida / Salvastudente``
+    banner), plus "back to index" links and form feeds. A label that merely repeats
+    in the body of a table (``Incluso``) is not at the edge and stays. Repeated
+    lines only count in documents of three or more pages, so a short text file can
+    never lose a line to that rule. Removed lines are logged. Page numbers are
+    only removed from PDFs, and only from the first or last line of a page:
+    elsewhere a line that is just ``450`` is a value, and in Markdown or text a
+    line that is just ``12`` or ``1/2`` is content.
     """
     cleaned = [_lines(text) for text, _ in pages]
     if len(cleaned) >= 3:
         counts: dict[str, int] = {}
         for page in cleaned:
-            for ln in set(page):
+            for ln in set(page[:_EDGE] + page[-_EDGE:]):
                 counts[ln] = counts.get(ln, 0) + 1
         furniture = {ln for ln, c in counts.items() if c >= len(cleaned) / 2}
+        if furniture:
+            log.info("%s: removed as running header/footer: %s", name, sorted(furniture))
     else:
         furniture = set()
 
     result: list[list[str]] = []
-    for number, (page, (_, layout)) in enumerate(zip(cleaned, pages, strict=True), start=1):
-        page = [ln for ln in page if ln not in furniture and not _NAV.match(ln)]
+    for number, (page, (_, layout_of)) in enumerate(zip(cleaned, pages, strict=True), start=1):
+        page = [
+            ln
+            for k, ln in enumerate(page)
+            if not (ln in furniture and (k < _EDGE or k >= len(page) - _EDGE))
+            and not _NAV.match(ln)
+        ]
         if pdf:
             page = _strip_page_number(page, number)
-        if layout and _is_label_page(page):  # layout text exists only for PDFs
+        if pdf and _is_label_page(page):
             log.warning(
                 "%s p.%d skipped as labels, not prose: check it held no facts", name, number
             )
             continue
+        layout = layout_of()
         page = _in_layout_order(page, layout)
         if title := _layout_title(page, layout):
             page.remove(title)
@@ -376,14 +451,29 @@ class _Section:
     units: list[str]
 
 
+_QUESTION_OPENER = re.compile(
+    r"^(COME|COSA|CHE|CHI|DOVE|QUANDO|QUANTO|QUANTI|QUANTE|QUALE|QUALI|PERCH[ÉE]|POSSO|POSSONO|"
+    r"DEVO|DEVONO|SI PU[ÒO]|C[’']?[ÈE]|CI SONO|[ÈE] POSSIBILE|[ÈE]|SONO|HO|HA|WHAT|WHERE|WHEN|"
+    r"WHO|WHOM|WHICH|WHY|HOW|IS|ARE|CAN|COULD|DO|DOES|MUST|SHOULD|WILL|MAY|HAS|HAVE)\b",
+    re.I,
+)
+
+
 def _rejoin_questions(lines: list[str]) -> list[str]:
-    """A long ALL-CAPS question wraps onto two lines; put it back on one."""
+    """A long ALL-CAPS question wraps onto two lines; put it back on one.
+
+    Only a head that opens like a question is joined (``COME``, ``WHERE``, ``C'È``
+    ...): a long ALL-CAPS notice just above a question is a title, not half of it.
+    A question that opens with some other word is left as two lines, which is the
+    safer mistake.
+    """
     out: list[str] = []
     for ln in lines:
         wrapped = (
             out
             and _is_question(ln)
             and _is_upper(out[-1])
+            and bool(_QUESTION_OPENER.match(out[-1]))
             and len(out[-1]) > 45  # shorter is a heading, not the first half of a question
             and not out[-1].endswith(("?", ".", ":"))
         )
@@ -426,10 +516,9 @@ def _sections(lines: list[str]) -> list[_Section]:
             else:
                 path, caps = path[: level - 1] + [text], None
             title = " > ".join(path + ([caps] if caps else []))
-        elif _is_question(ln) or _BULLET.match(ln):
-            flush_unit()
-            cur.append(ln)
         else:
+            if _is_question(ln) or _BULLET.match(ln):  # a new unit starts here
+                flush_unit()
             cur.append(ln)
     flush_section(title)
     return sections
@@ -449,6 +538,16 @@ def _cut_at_spaces(text: str, size: int) -> list[str]:
     if text:
         out.append(text)
     return out
+
+
+MAX_TITLE = 200
+"""A heading path longer than this is a misdetected heading; keep its deepest part."""
+
+
+def _short_title(title: str | None) -> str | None:
+    if title is None or len(title) <= MAX_TITLE:
+        return title
+    return "…" + title[-(MAX_TITLE - 1) :].lstrip()
 
 
 def _split_long(unit: str, reserve: int = 0) -> list[str]:
@@ -527,6 +626,7 @@ def build_chunks(src: Path | None = None) -> list[Chunk]:
     src = Path(src) if src is not None else corpus_dir()
     manifest = _load_manifest(src)
     documents = _documents(src)
+    _check_unique(documents, manifest)
 
     present = {p.name for p in documents}
     for path in documents:
@@ -547,7 +647,8 @@ def build_chunks(src: Path | None = None) -> list[Chunk]:
             log.warning("NOT INGESTED: %s has unsupported format %s", path.name, path.suffix)
             continue
         suffix = path.suffix.lower()
-        pages = _clean_pages(_read_pages(path), path.name, pdf=suffix == ".pdf")
+        with _quiet_pypdf():  # layout text is read lazily, inside _clean_pages
+            pages = _clean_pages(_read_pages(path), path.name, pdf=suffix == ".pdf")
         lines = [ln for page in pages for ln in page]
         if suffix == ".txt":
             # In .txt files, "# ..." lines are comments for the people who maintain
@@ -556,11 +657,11 @@ def build_chunks(src: Path | None = None) -> list[Chunk]:
             lines = [ln for ln in lines if not ln.startswith("# ")]
         n = 0
         for section in _sections(lines):
-            # the title is prepended below, so it counts against the chunk size
-            reserve = min(len(section.title) + 1, TARGET_CHARS // 2) if section.title else 0
+            title = _short_title(section.title)
+            reserve = len(title) + 1 if title else 0  # the title is prepended, so it counts
             for text in _pack(section.units, reserve):
                 n += 1
-                body = f"{section.title}\n{text}" if section.title else text
+                body = f"{title}\n{text}" if title else text
                 chunks.append(
                     Chunk(
                         id=f"{path.name}#{n}",
@@ -568,7 +669,7 @@ def build_chunks(src: Path | None = None) -> list[Chunk]:
                         source=path.name,
                         tier=entry.tier,  # type: ignore[arg-type]
                         lang=entry.lang,
-                        section=section.title,
+                        section=title,
                     )
                 )
         if n == 0:

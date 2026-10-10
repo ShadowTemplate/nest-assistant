@@ -5,7 +5,7 @@ Implemented in `src/nest_assistant/ingest/__init__.py`. Contains no Nest text.
 ## What a chunk is
 
 One section of a document, or one answer of the residents' Q&A guides, packed with
-its neighbours up to about **900 characters**, counting the title (hard ceiling 1400:
+its neighbours up to about **900 characters**, counting the title (a title longer than 200 characters is cut to its deepest part; hard ceiling 1400:
 a single unit that fits under it is kept whole, anything longer is cut on sentences,
 then on spaces, then hard). The section title is both stored in `Chunk.section` and
 repeated as the first line of `text`, so a chunk still makes sense when it is read
@@ -28,13 +28,20 @@ justify this choice over a window belong there, not here.
 
 ## Pipeline
 
-1. **Manifest gate.** `manifest.yaml` next to the documents gives tier and language.
-   No entry means not ingested, and a warning names the file. No manifest at all
-   raises. There is no default tier.
+1. **Manifest gate.** `manifest.yaml` next to the documents gives tier and language
+   (any two-letter code; quote `'no'`, which YAML reads as false). No entry means not
+   ingested, and a warning names the file. No manifest at all raises, and so does a
+   bad entry, with every bad entry listed in one error. There is no default tier.
+   Two listed files with the same name in different folders raise (their ids would
+   collide); unlisted duplicates are ignored.
 2. **Extract.** PDF text from `pypdf`; Markdown and text as they are; `.docx`
-   paragraphs and tables in document order (a table row becomes `cell | cell`).
-3. **Clean.** Remove form feeds, "back to index" links, and any line repeated on
-   at least half the pages of a document of three or more pages (running headers).
+   paragraphs and tables in document order (a table row becomes `cell | cell`; a
+   merged cell appears once, equal values in separate cells both stay). PDF layout
+   text, which is slow, is computed only for pages that survive cleaning.
+3. **Clean.** Remove form feeds, "back to index" links, and any line that is among
+   the first or last three lines of at least half the pages of a document of three or
+   more pages (running headers and footers; a label repeated inside a table body
+   stays). Removed lines are logged at INFO.
    Page numbers (`12`, `1/2`, `pag. 3 di 9`) are removed from PDFs only, and only when
    they are the first or last line of a page (a bare number must also be within 5 of
    the page's position in the file). A number in the middle of a page is a value, as
@@ -45,8 +52,8 @@ justify this choice over a window belong there, not here.
    line breaks. A hyphen at the end of a line is dropped (`magi-` `strale`) except
    after a few known compound heads (`check-` `in` stays `check-in`). Pages that are only labels (maps, floor plans, covers) are dropped
    and logged at **WARNING**, so a wrongly dropped page is visible. A page with
-   schedule dates, a currency symbol, an opening time, or a sentence of four or more
-   words is never dropped as labels.
+   schedule dates, a currency symbol, an opening time, a sentence of four or more
+   words, a `Key: value` line, or a day or month name is never dropped as labels.
 4. **Order.** For single-column PDF pages, lines are put back in on-page order
    (drawing order can place a table after the next heading), and the page title is
    moved to the top.
@@ -54,7 +61,8 @@ justify this choice over a window belong there, not here.
    `a. Sub-clause`), and ALL-CAPS titles followed by prose. An `a. ...` line is a
    sub-clause only when prose follows it; in a run of short items (`a. Essere
    maggiorenni` / `b. Essere iscritti`) each is a list entry inside its section. Questions in capitals
-   start a new unit. Then pack units to the target size.
+   start a new unit. A question wrapped over two lines is rejoined only when it opens
+   like a question (`COME`, `WHERE`, `C'È` ...); anything else stays as two lines. Then pack units to the target size.
 
 ## Ids
 

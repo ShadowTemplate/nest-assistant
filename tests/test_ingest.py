@@ -70,6 +70,9 @@ def test_sections_split_on_headings(corpus: Path):
     assert {"Rette", "Ospiti"} <= sections
 
 
+_NO_LAYOUT = ingest._no_layout
+
+
 # ---------------------------------------------------------------------------
 # Units
 # ---------------------------------------------------------------------------
@@ -128,7 +131,7 @@ def test_each_question_starts_its_own_unit():
 # Cleaning
 # ---------------------------------------------------------------------------
 def test_furniture_repeated_on_half_the_pages_is_removed():
-    pages = [(f"NEST COLLEGE\nCorpo della pagina {i}.\n{i}", "") for i in range(1, 5)]
+    pages = [(f"NEST COLLEGE\nCorpo della pagina {i}.\n{i}", _NO_LAYOUT) for i in range(1, 5)]
     cleaned = ingest._clean_pages(pages, "x.pdf", pdf=True)
     flat = [ln for page in cleaned for ln in page]
     assert "NEST COLLEGE" not in flat
@@ -137,12 +140,12 @@ def test_furniture_repeated_on_half_the_pages_is_removed():
 
 
 def test_page_numbers_survive_outside_pdfs():
-    cleaned = ingest._clean_pages([("Camere\n12\n1/2", "")], "note.md")
+    cleaned = ingest._clean_pages([("Camere\n12\n1/2", _NO_LAYOUT)], "note.md")
     assert cleaned == [["Camere", "12", "1/2"]]
 
 
 def test_back_to_index_links_are_removed():
-    assert ingest._clean_pages([("Testo\nTorna all'indice", "")]) == [["Testo"]]
+    assert ingest._clean_pages([("Testo\nTorna all'indice", _NO_LAYOUT)]) == [["Testo"]]
 
 
 def test_price_table_page_is_not_mistaken_for_labels():
@@ -250,15 +253,20 @@ def test_pdf_path_end_to_end(tmp_path: Path):
 # Review round 2
 # ---------------------------------------------------------------------------
 def test_values_in_a_pdf_table_are_not_taken_for_page_numbers():
-    page = "Retta\nSingola\n450\nDoppia\n320\nStudio\n610"
-    cleaned = ingest._clean_pages([(page, "")], "listino.pdf", pdf=True)
-    assert cleaned == [["Retta", "Singola", "450", "Doppia", "320", "Studio", "610"]]
+    page = "Retta\nSingola\n450 euro\nDoppia\n320\nStudio\n610"
+    cleaned = ingest._clean_pages([(page, _NO_LAYOUT)], "listino.pdf", pdf=True)
+    assert cleaned == [["Retta", "Singola", "450 euro", "Doppia", "320", "Studio", "610"]]
 
 
 def test_page_number_at_the_edge_of_a_pdf_page_is_removed():
-    pages = [("Testo uno\n1", ""), ("2\nTesto due", ""), ("Testo tre\npag. 3 di 9", "")]
+    body = "Il regolamento si applica a tutti gli ospiti della residenza."
+    pages = [
+        (f"{body}\n1", _NO_LAYOUT),
+        (f"2\n{body} Due.", _NO_LAYOUT),
+        (f"{body} Tre.\npag. 3 di 9", _NO_LAYOUT),
+    ]
     cleaned = ingest._clean_pages(pages, "x.pdf", pdf=True)
-    assert cleaned == [["Testo uno"], ["Testo due"], ["Testo tre"]]
+    assert cleaned == [[body], [f"{body} Due."], [f"{body} Tre."]]
 
 
 def test_a_short_page_of_sentences_is_not_a_label_page():
@@ -368,3 +376,136 @@ def test_docx_tables_are_read_in_order(tmp_path: Path):
     text = ingest.build_chunks(tmp_path)[0].text
     assert text.index("Listino") < text.index("Singola | 450") < text.index("Doppia | 320")
     assert text.index("Doppia | 320") < text.index("Fine")
+
+
+# ---------------------------------------------------------------------------
+# Review round 3
+# ---------------------------------------------------------------------------
+def test_docx_equal_values_are_kept_and_merged_cells_are_not_repeated(tmp_path: Path):
+    docx = pytest.importorskip("docx", reason="needs the ingest extra: uv sync --extra ingest")
+    doc = docx.Document()
+    table = doc.add_table(rows=3, cols=3)
+    for col, text in enumerate(["Doppia", "8.250", "8.250"]):
+        table.cell(0, col).text = text
+    for col, text in enumerate(["Animali", "Sì", "Sì"]):
+        table.cell(1, col).text = text
+    merged = table.cell(2, 0).merge(table.cell(2, 2))
+    merged.text = "Tutti i prezzi includono IVA"
+    doc.save(tmp_path / "t.docx")
+    (tmp_path / "manifest.yaml").write_text(
+        "documents:\n  - {filename: t.docx, lang: it, tier: public}\n", encoding="utf-8"
+    )
+    text = ingest.build_chunks(tmp_path)[0].text
+    assert "Doppia | 8.250 | 8.250" in text
+    assert "Animali | Sì | Sì" in text
+    assert text.count("Tutti i prezzi includono IVA") == 1
+
+
+def test_a_label_repeated_in_table_bodies_is_not_furniture():
+    body = (
+        "Prezzi pagina {i}\nCamera doppia\nVoce {i}\nIncluso\nSì\nCamera singola\n{i}00\nNote {i}"
+    )
+    pages = [
+        (f"Intestazione fissa\n{body.format(i=i)}\nPiè fisso", _NO_LAYOUT) for i in range(1, 4)
+    ]
+    flat = [ln for page in ingest._clean_pages(pages, "x.pdf") for ln in page]
+    assert "Intestazione fissa" not in flat  # first line of every page
+    assert "Piè fisso" not in flat  # last line of every page
+    assert flat.count("Incluso") == 3  # in the body: stays
+    assert flat.count("Camera singola") == 3
+
+
+@pytest.mark.parametrize(
+    "page",
+    [
+        ["Chiuso dal 24 al 26 dicembre"],
+        ["Ufficio: aperto lunedì"],
+        ["Segreteria", "Chiusa il sabato"],
+    ],
+)
+def test_short_pages_with_a_fact_are_kept(page: list[str]):
+    assert not ingest._is_label_page(page)
+
+
+def test_a_caps_notice_is_not_joined_to_the_question_below_it():
+    lines = [
+        "AVVISO IMPORTANTE PER TUTTI GLI OSPITI DELLA RESIDENZA",
+        "COME FUNZIONA LA LAVANDERIA?",
+    ]
+    assert ingest._rejoin_questions(lines) == lines
+
+
+def test_a_wrapped_question_is_still_joined():
+    lines = ["COME RIMANERE AGGIORNATO RISPETTO A ORARI E NOVITÀ", "SULLE PROPOSTE DEL MESE?"]
+    assert ingest._rejoin_questions(lines) == [" ".join(lines)]
+    lines = ["WHERE CAN I FIND DETERGENTS AND FABRIC SOFTENER FOR", "THE ROOM?"]
+    assert ingest._rejoin_questions(lines) == [" ".join(lines)]
+
+
+def test_a_very_long_title_cannot_push_a_chunk_past_the_ceiling(tmp_path: Path):
+    (tmp_path / "manifest.yaml").write_text(
+        "documents:\n  - {filename: a.md, lang: it, tier: public}\n", encoding="utf-8"
+    )
+    title = "Titolo " * 100  # 700 characters
+    body = "\n".join(f"- voce numero {i} del regolamento interno, da leggere" for i in range(60))
+    (tmp_path / "a.md").write_text(f"# {title}\n{body}\n", encoding="utf-8")
+    chunks = ingest.build_chunks(tmp_path)
+    assert len(chunks) > 1
+    assert all(len(c.text) <= ingest.TARGET_CHARS for c in chunks)
+    assert all(len(c.section or "") <= ingest.MAX_TITLE for c in chunks)
+
+
+def test_manifest_accepts_any_two_letter_language_and_reports_every_bad_entry(tmp_path: Path):
+    (tmp_path / "manifest.yaml").write_text(
+        "documents:\n"
+        "  - {filename: a.md, lang: de, tier: public}\n"
+        "  - {filename: b.md, lang: no, tier: public}\n"  # YAML: False
+        "  - {filename: c.md, lang: it, tier: nope}\n",
+        encoding="utf-8",
+    )
+    with pytest.raises(ValueError) as err:
+        ingest.build_chunks(tmp_path)
+    message = str(err.value)
+    assert "b.md" in message and "c.md" in message  # both, in one error
+    assert "a.md" not in message  # German is fine
+
+
+def test_duplicate_names_only_matter_for_documents_in_the_manifest(tmp_path: Path):
+    (tmp_path / "manifest.yaml").write_text(
+        "documents:\n  - {filename: ok.md, lang: it, tier: public}\n", encoding="utf-8"
+    )
+    (tmp_path / "ok.md").write_text("# Titolo\nTesto.\n", encoding="utf-8")
+    for folder in ("old", "new"):
+        (tmp_path / folder).mkdir()
+        (tmp_path / folder / "bozza.pdf").write_bytes(b"not listed, never opened")
+    assert [c.source for c in ingest.build_chunks(tmp_path)] == ["ok.md"]
+
+    (tmp_path / "manifest.yaml").write_text(
+        "documents:\n  - {filename: bozza.pdf, lang: it, tier: public}\n", encoding="utf-8"
+    )
+    with pytest.raises(ValueError, match="same filename"):
+        ingest.build_chunks(tmp_path)
+
+
+def test_layout_text_is_only_computed_for_pages_that_need_it():
+    calls: list[int] = []
+
+    def layout(n: int):
+        def get() -> str:
+            calls.append(n)
+            return ""
+
+        return get
+
+    prose = "Il regolamento della residenza si applica a tutti gli ospiti senza eccezioni."
+    pages = [("NEST\nLAB\nBAR", layout(1)), (prose, layout(2))]
+    ingest._clean_pages(pages, "x.pdf", pdf=True)
+    assert calls == [2]  # the label page never paid for layout extraction
+
+
+def test_pypdf_log_level_is_restored():
+    logger = logging.getLogger("pypdf")
+    logger.setLevel(logging.WARNING)
+    with ingest._quiet_pypdf():
+        assert logger.level == logging.ERROR
+    assert logger.level == logging.WARNING
