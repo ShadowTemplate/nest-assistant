@@ -31,10 +31,19 @@ Stuck for 15 minutes?
 
 from __future__ import annotations
 
-from ..config import CHUNKS_PATH, DEFAULT_K
+import hashlib
+import json
+import os
+from datetime import UTC, datetime
+from typing import TYPE_CHECKING, Any
+
+from ..config import CHUNKS_PATH, DEFAULT_K, EMBEDDING_MODEL, INDEX_DIR, embedding_model_cached
 from ..ingest import build_chunks
-from ..schema import Chunk, Tier
+from ..schema import Chunk, Tier, tier_allows
 from ..storage import read_chunks
+
+if TYPE_CHECKING:
+    import numpy as np
 
 OWNER = "TEAM 2 — INDEX"
 INTERFACE = "index.search(q: str, tier: Tier, k: int) -> list[Chunk]"
@@ -49,6 +58,98 @@ def load_corpus() -> list[Chunk]:
     """
     chunks = read_chunks(CHUNKS_PATH)
     return chunks if chunks else build_chunks()
+
+
+# ---------------------------------------------------------------------------
+# The vector index: one row of numbers per chunk, saved under build/index/
+# ---------------------------------------------------------------------------
+
+EMBEDDINGS_PATH = INDEX_DIR / "embeddings.npy"
+META_PATH = INDEX_DIR / "meta.json"
+
+_model: Any = None
+_cache: dict[str, Any] = {}  # fingerprint -> (vectors, chunk_ids), for this process
+
+
+def _fingerprint(chunks: list[Chunk], model: str) -> str:
+    """A seal over everything that changes a vector: the model, and each id and text.
+
+    One changed comma, one new chunk or a different model gives a different seal,
+    which is how :func:`build_index` knows the saved index is stale. ``tier`` is
+    left out on purpose: it does not change a vector, and the saved index never
+    supplies it — tiers always come from the live corpus.
+    """
+    h = hashlib.sha256()
+    h.update(model.encode("utf-8"))
+    for chunk in chunks:
+        h.update(b"\x00" + chunk.id.encode("utf-8") + b"\x00" + chunk.text.encode("utf-8"))
+    return h.hexdigest()
+
+
+def _embed(texts: list[str]) -> np.ndarray:
+    """Turn texts into unit-length vectors, so closeness is a single dot product."""
+    global _model
+    if _model is None:
+        try:
+            from sentence_transformers import SentenceTransformer
+        except ImportError:
+            raise RuntimeError(
+                "sentence-transformers is not installed — run `make setup`"
+            ) from None
+        if not embedding_model_cached():
+            raise RuntimeError(f"{EMBEDDING_MODEL} is not downloaded — run `make warm`")
+        _model = SentenceTransformer(EMBEDDING_MODEL, local_files_only=True)
+    vectors = _model.encode(texts, normalize_embeddings=True, show_progress_bar=False)
+    return vectors.astype("float32")
+
+
+def build_index(
+    chunks: list[Chunk] | None = None, force: bool = False
+) -> tuple[np.ndarray, list[str]]:
+    """Vectors for every chunk, from ``build/index/`` if still valid, else freshly embedded.
+
+    Returns ``(vectors, chunk_ids)``: row ``i`` of ``vectors`` belongs to
+    ``chunk_ids[i]``. Only vectors and ids are saved — never text or tier — so a
+    stale file on disk cannot hand anyone an out-of-date tier.
+    """
+    import numpy as np
+
+    chunks = load_corpus() if chunks is None else chunks
+    fingerprint = _fingerprint(chunks, EMBEDDING_MODEL)
+
+    if not force and fingerprint in _cache:
+        return _cache[fingerprint]
+
+    if not force and META_PATH.exists() and EMBEDDINGS_PATH.exists():
+        meta = json.loads(META_PATH.read_text(encoding="utf-8"))
+        if meta.get("fingerprint") == fingerprint:
+            _cache[fingerprint] = (np.load(EMBEDDINGS_PATH), meta["chunk_ids"])
+            return _cache[fingerprint]
+
+    vectors = _embed([chunk.text for chunk in chunks])
+    ids = [chunk.id for chunk in chunks]
+    meta = {
+        "fingerprint": fingerprint,
+        "model": EMBEDDING_MODEL,
+        "dim": int(vectors.shape[1]),
+        "n_chunks": len(ids),
+        "chunk_ids": ids,
+        "built_at": datetime.now(UTC).isoformat(timespec="seconds"),
+    }
+
+    # Write to a temporary name, then rename: a crash halfway never leaves a
+    # half-written index that looks valid. meta.json goes last, because it is
+    # what says "this index is complete".
+    INDEX_DIR.mkdir(parents=True, exist_ok=True)
+    tmp_vectors = EMBEDDINGS_PATH.with_suffix(".tmp.npy")
+    np.save(tmp_vectors, vectors)
+    os.replace(tmp_vectors, EMBEDDINGS_PATH)
+    tmp_meta = META_PATH.with_suffix(".tmp")
+    tmp_meta.write_text(json.dumps(meta, ensure_ascii=False, indent=2), encoding="utf-8")
+    os.replace(tmp_meta, META_PATH)
+
+    _cache[fingerprint] = (vectors, ids)
+    return _cache[fingerprint]
 
 
 # ---------------------------------------------------------------------------
@@ -82,10 +183,48 @@ def search(q: str, tier: Tier = "public", k: int = DEFAULT_K) -> list[Chunk]:
       Italian. Measure it. Do not take anyone's word for it, including this
       docstring's.
 
-    The stub returns the corpus unranked, ignoring the query and the tier.
+    Scores are cosine similarities, roughly 0..1: see :func:`search_with_scores`.
     """
-    del q  # the stub does not read the question. Yours must.
-    return load_corpus()[:k]
+    return [chunk for chunk, _ in search_with_scores(q, tier, k)]
 
 
-__all__ = ["search", "load_corpus", "OWNER", "INTERFACE", "STATUS"]
+def search_with_scores(
+    q: str, tier: Tier = "public", k: int = DEFAULT_K
+) -> list[tuple[Chunk, float]]:
+    """:func:`search`, with each chunk's similarity to ``q``.
+
+    The score is the cosine similarity between question and chunk: 1.0 would be
+    identical meaning, around 0.2 is "unrelated". On the fixtures a right answer
+    usually scores 0.35–0.65; below ~0.3 treat the top result as a guess.
+    """
+    # Tier filter first, before any ranking: a chunk the caller may not see is
+    # never scored, so it can never be returned — whatever the ranking does.
+    corpus = load_corpus()
+    allowed = [i for i, chunk in enumerate(corpus) if tier_allows(tier, chunk.tier)]
+    if not allowed or k <= 0:
+        return []
+
+    try:
+        vectors, _ = build_index(corpus)
+        query = _embed([q])[0]
+    except (ImportError, RuntimeError):
+        # `make setup-lite` or CI: no embedding model. Stay safe and runnable —
+        # tier-filtered, in document order — rather than break the pipeline.
+        return [(corpus[i], 0.0) for i in allowed[:k]]
+
+    scores = vectors[allowed] @ query
+    # Stable sort on the negated score: ties keep document order, so the same
+    # query over the same corpus always ranks the same way.
+    order = (-scores).argsort(kind="stable")[:k]
+    return [(corpus[allowed[i]], float(scores[i])) for i in order]
+
+
+__all__ = [
+    "search",
+    "search_with_scores",
+    "load_corpus",
+    "build_index",
+    "OWNER",
+    "INTERFACE",
+    "STATUS",
+]
