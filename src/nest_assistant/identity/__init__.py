@@ -21,11 +21,11 @@ import os
 from pathlib import Path
 
 from ..config import DATA_DIR
-from ..schema import Tier
+from ..schema import TIERS, Tier
 
 OWNER = "TEAM 4 — CHAT"
 INTERFACE = "identity.resolve(user_id: str) -> Tier"
-STATUS = "stub"  # flip to "real" when you replace the body below. `make board` reads this.
+STATUS = "real"  # flip to "real" when you replace the body below. `make board` reads this.
 
 ALLOWLIST_PATH = Path(os.environ.get("NEST_ALLOWLIST", DATA_DIR / "allowlist.json"))
 """``{"telegram:123456": "resident", "telegram:99": "staff"}``
@@ -62,11 +62,14 @@ def resolve(user_id: str) -> Tier:
     * ``user_id`` is namespaced by channel — ``"telegram:123456"`` — so that the
       phone line in 2028 does not collide with Telegram ids.
 
-    The stub always returns ``"public"``, which makes the bot correct but boring:
-    it never shows a resident anything a parent could not see.
+    The tier comes from the allowlist (``data/allowlist.json``). An id that is not
+    listed, or is listed with a value that is not a real tier, is ``"public"``.
     """
-    del user_id  # the stub does not look at who is asking. Yours must.
-    return "public"
+    try:
+        tier = load_allowlist().get(user_id, "public")
+    except Exception:  # noqa: BLE001 - runs on every message; when in doubt, public
+        return "public"
+    return tier if tier in TIERS else "public"  # type: ignore[return-value]
 
 
 __all__ = ["resolve", "load_allowlist", "ALLOWLIST_PATH", "OWNER", "INTERFACE", "STATUS"]

@@ -345,3 +345,312 @@
   expected_answer: "mercoledì"
   corpus: fixtures
   source: document
+
+# --- Public: structure, prices, services, staff, admissions (extension). ---
+# Facts taken from prezzi-2026.md and ammissioni.md. Questions without an answer
+# in the current documents are not here yet.
+
+- id: q031
+  question: "Che tipi di camera ci sono?"
+  tier: public
+  expect: answer
+  expected_sources: [prezzi-2026.md]
+  expected_answer: "singole"
+  source: document
+  notes: "Singole, doppie e triple. La tripla è un'offerta limitata."
+
+- id: q032
+  question: "Quante camere ci sono per tipo?"
+  tier: public
+  expect: answer
+  expected_sources: [prezzi-2026.md]
+  expected_answer: "91"
+  source: document
+  notes: "91 singole, 49 doppie e 2 triple."
+
+- id: q033
+  question: "Le camere hanno il bagno privato?"
+  tier: public
+  expect: answer
+  expected_sources: [prezzi-2026.md]
+  expected_answer: "bagno privato"
+  source: document
+  notes: "Sì, tutte le camere."
+
+- id: q034
+  question: "Le triple sono sempre disponibili?"
+  tier: public
+  expect: answer
+  expected_sources: [prezzi-2026.md]
+  expected_answer: "limitata"
+  source: document
+  notes: "No: offerta limitata, 2 in tutta la struttura."
+
+- id: q035
+  question: "C'è l'aria condizionata?"
+  tier: public
+  expect: answer
+  expected_sources: [prezzi-2026.md]
+  expected_answer: "aria condizionata"
+  source: document
+  notes: "Sì, è tra i servizi residenziali inclusi nella retta."
+
+- id: q036
+  question: "Quanto costa una singola all'anno?"
+  tier: public
+  expect: answer
+  expected_sources: [prezzi-2026.md]
+  expected_answer: "10.450"
+  source: document
+  notes: "Per l'anno accademico, dal 1 settembre al 31 luglio. Duplica q001."
+
+- id: q037
+  question: "Quanto costa una doppia per un semestre?"
+  tier: public
+  expect: answer
+  expected_sources: [prezzi-2026.md]
+  expected_answer: "4.500"
+  source: document
+  notes: "Duplica q002."
+
+- id: q038
+  question: "Quanto costa la tripla?"
+  tier: public
+  expect: answer
+  expected_sources: [prezzi-2026.md]
+  expected_answer: "7.150"
+  source: document
+  notes: "7.150 € all'anno o 3.900 € a semestre. Duplica q006."
+
+- id: q039
+  question: "Quali sono le date dei semestri?"
+  tier: public
+  expect: answer
+  expected_sources: [prezzi-2026.md]
+  expected_answer: "10 febbraio"
+  source: document
+  notes: "Dal 1 settembre al 10 febbraio, oppure dal 15 febbraio al 31 luglio."
+
+- id: q040
+  question: "Quanto è la caparra e quando si paga?"
+  tier: public
+  expect: answer
+  expected_sources: [prezzi-2026.md]
+  expected_answer: "1.500"
+  source: document
+  notes: "1.500 €, alla firma del contratto. Duplica in parte q004."
+
+- id: q041
+  question: "Ci sono sconti per fratelli o sorelle?"
+  tier: public
+  expect: answer
+  expected_sources: [prezzi-2026.md]
+  expected_answer: "mensilità"
+  source: document
+  notes: "Se almeno due figli sono iscritti nello stesso anno accademico, dal secondo sconto pari alla quota alloggio di una mensilità. Duplica q005."
+
+- id: q042
+  question: "Ci sono borse o sostegni al merito?"
+  tier: public
+  expect: answer
+  expected_sources: [prezzi-2026.md]
+  expected_answer: "2.250"
+  source: document
+  notes: >
+    18 sostegni NEST da 1.500 €, più 750 € se confermati l'anno dopo (2.250 €
+    in totale). Valgono per singola o doppia e riducono la quota servizi
+    College, non l'alloggio. Per il 2026/2027 il concorso è già chiuso.
+    Duplica q010.
+
+- id: q043
+  question: "Se vado un anno intero in Erasmus, pago la retta?"
+  tier: public
+  expect: answer
+  expected_sources: [prezzi-2026.md]
+  expected_answer: "sospesa"
+  source: document
+  notes: "Retta sospesa al 100%. Per un solo semestre fuori si paga la retta semestrale. I colloqui con il tutor continuano online."
+
+- id: q044
+  question: "Se mi laureo a marzo posso avere un contratto semestrale?"
+  tier: public
+  expect: answer
+  expected_sources: [prezzi-2026.md]
+  expected_answer: "50%"
+  source: document
+  notes: "Se ti laurei entro il marzo successivo puoi chiederlo; se la Direzione approva, retta dell'anno ridotta del 50%."
+
+- id: q045
+  question: "Posso restare solo per un weekend?"
+  tier: public
+  expect: answer
+  expected_sources: [prezzi-2026.md]
+  expected_answer: "Ostello"
+  source: document
+  notes: "No: i soggiorni brevi non sono gestiti da NEST College, bisogna contattare l'Ostello di Trento."
+
+- id: q046
+  question: "Cosa è incluso nella retta?"
+  tier: public
+  expect: answer
+  expected_sources: [prezzi-2026.md]
+  expected_answer: "utenze"
+  source: document
+  notes: >
+    Utenze e wifi; colazione e cena lun–ven (RistoNEST); presidio 24 ore su 24,
+    manutenzione ordinaria, aria condizionata; palestra, sala musica e
+    lavanderia 24 ore su 24, parcheggio; percorso formativo.
+
+- id: q047
+  question: "Wifi e utenze sono compresi?"
+  tier: public
+  expect: answer
+  expected_sources: [prezzi-2026.md]
+  expected_answer: "wifi"
+  source: document
+
+- id: q048
+  question: "Ci sono palestra, sala musica e lavanderia?"
+  tier: public
+  expect: answer
+  expected_sources: [prezzi-2026.md]
+  expected_answer: "24 ore"
+  source: document
+  notes: "Sì, accessibili 24 ore su 24 e incluse nella retta."
+
+- id: q049
+  question: "C'è un parcheggio?"
+  tier: public
+  expect: answer
+  expected_sources: [prezzi-2026.md]
+  expected_answer: "parcheggio"
+  source: document
+  notes: "Sì, incluso tra i servizi residenziali."
+
+- id: q050
+  question: "Quali pasti sono inclusi?"
+  tier: public
+  expect: answer
+  expected_sources: [prezzi-2026.md]
+  expected_answer: "colazione"
+  source: document
+  notes: "Colazione e cena dal lunedì al venerdì, servizio RistoNEST. Duplica in parte q003."
+
+- id: q051
+  question: "C'è qualcuno di notte?"
+  tier: public
+  expect: answer
+  expected_sources: [prezzi-2026.md]
+  expected_answer: "24 ore"
+  source: document
+  notes: "Sì, reperibilità e presidio 24 ore su 24."
+
+- id: q052
+  question: "Chi mi segue durante il percorso?"
+  tier: public
+  expect: answer
+  expected_sources: [prezzi-2026.md, ammissioni.md]
+  expected_answer: "tutor"
+  source: document
+  notes: >
+    Il tutor, con colloqui periodici; la Direzione, i tutor e lo staff valutano
+    il percorso per la conferma. I documenti non danno nomi né il numero di
+    tutor: una buona risposta non li inventa.
+
+- id: q053
+  question: "Con chi parlo se sono uno studente internazionale?"
+  tier: public
+  expect: answer
+  expected_sources: [ammissioni.md]
+  expected_answer: "referente"
+  source: document
+  notes: "Con il referente per gli studenti internazionali; richiesti almeno due colloqui."
+
+- id: q054
+  question: "Che percorso formativo offre NEST College?"
+  tier: public
+  expect: answer
+  expected_sources: [prezzi-2026.md, ammissioni.md]
+  expected_answer: "75%"
+  source: document
+  notes: >
+    Weekend formativi, laboratori e colloqui con il tutor, inclusi nella retta.
+    Per restare l'anno dopo servono il 75% delle attività e 110 punti formativi
+    (triennale e ciclo unico) oppure 90 (magistrale e anni oltre il terzo).
+
+- id: q055
+  question: "Cosa sono i weekend formativi e i laboratori?"
+  tier: public
+  expect: refusal
+  expected_sources: []
+  source: document
+  notes: >
+    I documenti li nominano come parte del percorso formativo ma non li
+    descrivono. Il bot deve dirlo e indirizzare alla segreteria (0461 959507),
+    senza inventare contenuti.
+
+- id: q056
+  question: "Gli internazionali ricevono un attestato?"
+  tier: public
+  expect: answer
+  expected_sources: [ammissioni.md]
+  expected_answer: "30"
+  source: document
+  notes: "Sì: con almeno 30 punti formativi, NEST College Certificate of Attendance."
+
+- id: q057
+  question: "Come prenoto una visita?"
+  tier: public
+  expect: answer
+  expected_sources: [ammissioni.md]
+  expected_answer: "0461 959505"
+  source: document
+  notes: "Chiamando lo 0461 959505 o lo 0461 959507; in presenza o online."
+
+- id: q058
+  question: "Che voto di maturità serve al 1° anno?"
+  tier: public
+  expect: answer
+  expected_sources: [ammissioni.md]
+  expected_answer: "70"
+  source: document
+  notes: "Almeno 70/100."
+
+- id: q059
+  question: "Che media serve dal 2° anno?"
+  tier: public
+  expect: answer
+  expected_sources: [ammissioni.md]
+  expected_answer: "24"
+  source: document
+  notes: "Media ≥ 24/30 e almeno il 50% dei CFU previsti. Magistrale al 1° anno: voto di laurea ≥ 90/110. Duplica q007."
+
+- id: q060
+  question: "Come funziona il colloquio?"
+  tier: public
+  expect: answer
+  expected_sources: [ammissioni.md]
+  expected_answer: "Direzione"
+  source: document
+  notes: "Con la Direzione, di persona o online. Valuta esperienze, attitudine relazionale, predisposizione alla vita collegiale, proattività e motivazione."
+
+- id: q061
+  question: "Entro quando consegno i documenti di merito?"
+  tier: public
+  expect: answer
+  expected_sources: [ammissioni.md]
+  expected_answer: "31 luglio"
+  source: document
+  notes: "Entro il 31 luglio 2026; se il colloquio è dopo quella data, alla firma del contratto."
+
+- id: q062
+  question: "La conferma per l'anno dopo è automatica?"
+  tier: public
+  expect: answer
+  expected_sources: [ammissioni.md]
+  expected_answer: "75%"
+  source: document
+  notes: >
+    No. Entro il 30 giugno 2027 servono il 75% di partecipazione, la media
+    richiesta per area e anno, i punti formativi e una valutazione positiva.
+    Per cause di forza maggiore si può chiedere un colloquio con tutor e Direzione.
