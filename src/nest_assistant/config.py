@@ -38,8 +38,32 @@ RESULTS_DIR = ROOT / "eval" / "results"
 # ---------------------------------------------------------------------------
 
 
-_NOT_CORPUS = {".gitkeep", "README.md"}
-"""The two files ``data/`` contains when it is empty of actual documents."""
+NOT_DOCUMENTS = {
+    "manifest.yaml",
+    "INVENTORY.md",
+    "README.md",
+    "allowlist.json",
+    "bot_testers.json",
+    ".gitkeep",
+}
+"""Files that sit at the top of ``data/`` next to the documents but are not documents.
+Shared with INGEST, so ``data/`` counts as a corpus exactly when ingest would find
+something in it."""
+
+
+def is_document(path: Path, root: Path) -> bool:
+    """True for a file under ``root`` that is a candidate document.
+
+    The names in ``NOT_DOCUMENTS`` are only skipped at the top level, so a
+    ``staff/README.md`` listed in the manifest is still read. Anything inside a
+    hidden folder (``.git``, ``.cache``) or with a hidden name is skipped.
+    """
+    rel = path.relative_to(root)
+    return (
+        path.is_file()
+        and not (len(rel.parts) == 1 and rel.name in NOT_DOCUMENTS)
+        and not any(part.startswith(".") for part in rel.parts)
+    )
 
 
 def corpus_dir() -> Path:
@@ -49,9 +73,7 @@ def corpus_dir() -> Path:
     This is why a student with no access to the real corpus can still do every
     task on the list, and why nothing anyone writes should care which one it got.
     """
-    if DATA_DIR.exists() and any(
-        p for p in DATA_DIR.rglob("*") if p.is_file() and p.name not in _NOT_CORPUS
-    ):
+    if DATA_DIR.exists() and any(is_document(p, DATA_DIR) for p in DATA_DIR.rglob("*")):
         return DATA_DIR
     return FIXTURES_DIR
 

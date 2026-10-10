@@ -544,3 +544,64 @@ def test_files_in_hidden_folders_are_ignored(tmp_path: Path):
     (tmp_path / ".cache" / "a.md").write_text("# Vecchio\nCopia.\n", encoding="utf-8")
     chunks = ingest.build_chunks(tmp_path)  # no duplicate-name error
     assert [c.section for c in chunks] == ["Titolo"]
+
+
+# ---------------------------------------------------------------------------
+# Review round 5
+# ---------------------------------------------------------------------------
+def test_one_unreadable_document_does_not_stop_the_others(tmp_path: Path, caplog):
+    (tmp_path / "manifest.yaml").write_text(
+        "documents:\n"
+        "  - {filename: a.md, lang: it, tier: public}\n"
+        "  - {filename: rotto.txt, lang: it, tier: public}\n",
+        encoding="utf-8",
+    )
+    (tmp_path / "a.md").write_text("# Titolo\nTesto.\n", encoding="utf-8")
+    (tmp_path / "rotto.txt").write_bytes("Caffè".encode("cp1252"))  # not UTF-8
+    with caplog.at_level(logging.WARNING):
+        chunks = ingest.build_chunks(tmp_path)
+    assert [c.source for c in chunks] == ["a.md"]
+    assert "NOT INGESTED: rotto.txt" in caplog.text
+
+
+def test_docx_heading_styles_become_sections(tmp_path: Path):
+    docx = pytest.importorskip("docx", reason="needs the ingest extra: uv sync --extra ingest")
+    doc = docx.Document()
+    doc.add_heading("Servizi", level=1)
+    doc.add_heading("Orari della reception", level=2)
+    doc.add_paragraph("La reception è aperta tutti i giorni dalle 8 alle 20.")
+    doc.save(tmp_path / "g.docx")
+    (tmp_path / "manifest.yaml").write_text(
+        "documents:\n  - {filename: g.docx, lang: it, tier: public}\n", encoding="utf-8"
+    )
+    assert [c.section for c in ingest.build_chunks(tmp_path)] == ["Servizi > Orari della reception"]
+
+
+def test_a_blank_pdf_page_is_not_reported_as_a_label_page(caplog):
+    prose = "Il regolamento della residenza si applica a tutti gli ospiti senza eccezioni."
+    with caplog.at_level(logging.WARNING):
+        pages = ingest._clean_pages([(prose, _NO_LAYOUT), ("", _NO_LAYOUT)], "x.pdf", pdf=True)
+    assert pages == [[prose]]
+    assert "skipped as labels" not in caplog.text
+
+
+def test_non_document_names_are_only_skipped_at_the_top(tmp_path: Path):
+    (tmp_path / "manifest.yaml").write_text(
+        "documents:\n  - {filename: README.md, lang: it, tier: staff}\n", encoding="utf-8"
+    )
+    (tmp_path / "README.md").write_text("# Leggimi\nNon è un documento.\n", encoding="utf-8")
+    (tmp_path / "staff").mkdir()
+    (tmp_path / "staff" / "README.md").write_text("# Procedura\nTesto.\n", encoding="utf-8")
+    assert [c.id for c in ingest.build_chunks(tmp_path)] == ["README.md#1"]
+    assert ingest.build_chunks(tmp_path)[0].section == "Procedura"
+
+
+def test_data_with_only_non_documents_falls_back_to_fixtures(tmp_path: Path, monkeypatch):
+    from nest_assistant import config
+
+    for name in ("allowlist.json", "manifest.yaml", "INVENTORY.md", ".gitkeep"):
+        (tmp_path / name).write_text("", encoding="utf-8")
+    monkeypatch.setattr(config, "DATA_DIR", tmp_path)
+    assert config.corpus_dir() == config.FIXTURES_DIR
+    (tmp_path / "bando.pdf").write_bytes(b"%PDF")
+    assert config.corpus_dir() == tmp_path

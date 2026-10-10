@@ -34,7 +34,7 @@ from pathlib import Path
 
 import yaml
 
-from ..config import corpus_dir
+from ..config import corpus_dir, is_document
 from ..schema import TIERS, Chunk
 
 OWNER = "TEAM 1 — INGEST"
@@ -48,15 +48,6 @@ TARGET_CHARS = 900
 MAX_CHARS = 1400
 """A single unit longer than this is split on lines, then sentences."""
 
-# Files that live next to the documents but are not documents.
-_NOT_DOCUMENTS = {
-    "manifest.yaml",
-    "INVENTORY.md",
-    "README.md",
-    "allowlist.json",
-    "bot_testers.json",
-    ".gitkeep",
-}
 _SUPPORTED = {".pdf", ".md", ".txt", ".docx"}
 
 
@@ -108,13 +99,7 @@ def _load_manifest(src: Path) -> dict[str, _Entry]:
 
 
 def _documents(src: Path) -> list[Path]:
-    return [
-        p
-        for p in sorted(src.rglob("*"))
-        if p.is_file()
-        and p.name not in _NOT_DOCUMENTS
-        and not any(part.startswith(".") for part in p.relative_to(src).parts)
-    ]
+    return [p for p in sorted(src.rglob("*")) if is_document(p, src)]
 
 
 def _check_unique(documents: list[Path], manifest: dict[str, _Entry]) -> None:
@@ -151,6 +136,18 @@ def _quiet_pypdf() -> Iterator[None]:
 
 def _no_layout() -> str:
     return ""
+
+
+_DOCX_HEADING = re.compile(r"^Heading ([1-6])$")
+
+
+def _docx_heading_level(paragraph: object) -> int:
+    """1-6 for a paragraph styled ``Title`` or ``Heading N``, else 0."""
+    style = getattr(getattr(paragraph, "style", None), "name", "") or ""
+    if style == "Title":
+        return 1
+    m = _DOCX_HEADING.match(style)
+    return int(m.group(1)) if m else 0
 
 
 def _read_pages(path: Path) -> list[tuple[str, _Layout]]:
@@ -191,6 +188,10 @@ def _read_pages(path: Path) -> list[tuple[str, _Layout]]:
                         if cell.text.strip():
                             cells.append(cell.text.strip())
                     lines.append(" | ".join(cells))
+            elif level := _docx_heading_level(block):
+                # Word headings carry their level in the style, not the text: give
+                # them the Markdown form so _heading sees them whatever their case.
+                lines.append(f"{'#' * level} {block.text}" if block.text.strip() else "")
             else:
                 lines.append(block.text)
         return [("\n".join(lines), _no_layout)]
@@ -373,6 +374,8 @@ def _clean_pages(
         ]
         if pdf:
             page = _strip_page_number(page, number)
+        if not page:  # blank, or nothing left but furniture: no facts to warn about
+            continue
         if pdf and _is_label_page(page):
             log.warning(
                 "%s p.%d skipped as labels, not prose: check it held no facts", name, number
@@ -670,8 +673,14 @@ def build_chunks(src: Path | None = None) -> list[Chunk]:
         if suffix not in _SUPPORTED:
             log.warning("NOT INGESTED: %s has unsupported format %s", path.name, path.suffix)
             continue
-        with _quiet_pypdf():  # layout text is read lazily, inside _clean_pages
-            pages = _clean_pages(_read_pages(path), path.name, pdf=suffix == ".pdf")
+        try:
+            with _quiet_pypdf():  # layout text is read lazily, inside _clean_pages
+                pages = _clean_pages(_read_pages(path), path.name, pdf=suffix == ".pdf")
+        except Exception as err:  # one broken file must not take the corpus down with it
+            log.warning(
+                "NOT INGESTED: %s could not be read: %s: %s", path.name, type(err).__name__, err
+            )
+            continue
         lines = [ln for page in pages for ln in page]
         if suffix == ".txt":
             # In .txt files, "# ..." lines are comments for the people who maintain
