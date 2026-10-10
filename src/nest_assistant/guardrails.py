@@ -17,7 +17,7 @@ import logging
 import re
 from collections import Counter, deque
 
-from .answer import REFUSAL_IT
+from .answer import REFUSAL_IT, estimate_confidence, format_footer
 from .config import PROMPTS_DIR
 from .schema import Answer, Chunk, Tier, tier_allows
 
@@ -146,8 +146,12 @@ def _refuse(rule: str, tier: Tier, detail: str) -> Answer:
     return Answer(text=REFUSAL_IT, citations=[], confidence=0.0, refused=True)
 
 
-def _split_footer(text: str) -> tuple[str, str]:
-    """Split ``text`` into the body and ANSWER's footer (``""`` if there is none)."""
+def split_footer(text: str) -> tuple[str, str]:
+    """Split ``text`` into the body and ANSWER's footer (``""`` if there is none).
+
+    The footer is metadata (confidence and tier), not part of the answer: EVAL
+    judges the body only, and the length limit counts the body only.
+    """
     match = _FOOTER.search(text)
     if not match:
         return text, ""
@@ -174,6 +178,9 @@ def apply(answer: Answer, chunks: list[Chunk], tier: Tier) -> Answer:
     2. ``hidden_citation`` — a cited id of a chunk the caller's tier may not
        see (repaired, and counted). Should never fire: the pipeline filters by
        tier before generating, so if it does, INDEX has a bug.
+
+    When 1 or 2 drop a citation, ANSWER's footer is rebuilt from the citations
+    that are left, so its level never names a tier the caller may not see.
     3. ``hidden_chunk_text`` — the answer repeats text from a chunk the caller's
        tier may not see. Should never fire: if it does, INDEX has a bug.
     4. ``system_prompt_leak`` — the answer repeats the system prompt.
@@ -208,6 +215,14 @@ def apply(answer: Answer, chunks: list[Chunk], tier: Tier) -> Answer:
         _fire("invented_citation", tier, ", ".join(invented))
     if hidden:
         _fire("hidden_citation", tier, ", ".join(hidden))
+    if dropped and answer.citations:
+        # ANSWER built the footer from the citations before they were checked: its
+        # level could still name a tier the asker may not see. Rebuild it.
+        body, footer = split_footer(answer.text)
+        if footer:
+            kept = [c for c in visible if c.id in answer.citations]
+            answer.confidence = estimate_confidence(answer.citations)
+            answer.text = f"{body}\n\n{format_footer(answer.confidence, kept)}"
 
     if answer.refused:
         return answer
@@ -250,7 +265,7 @@ def apply(answer: Answer, chunks: list[Chunk], tier: Tier) -> Answer:
     if not answer.citations:
         return _refuse("uncited_answer", tier, text)
 
-    body, footer = _split_footer(text)
+    body, footer = split_footer(text)
     if len(body) > MAX_CHARS:
         _fire("too_long", tier, f"{len(body)} chars")
         answer.text = _truncate(body) + footer
@@ -264,6 +279,7 @@ __all__ = [
     "counts",
     "events",
     "reset",
+    "split_footer",
     "MAX_CHARS",
     "MAX_EVENTS",
     "OWNER",

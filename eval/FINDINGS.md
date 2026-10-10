@@ -27,8 +27,8 @@ process; the counts and the log keep everything.
 
 | Rule | Catches | Action |
 |---|---|---|
-| `invented_citation` | cited id that was never retrieved | drop the citation |
-| `hidden_citation` | cited id of a chunk above the asker's tier | drop the citation |
+| `invented_citation` | cited id that was never retrieved | drop the citation, rebuild ANSWER's footer |
+| `hidden_citation` | cited id of a chunk above the asker's tier | drop the citation, rebuild ANSWER's footer |
 | `hidden_chunk_text` | answer repeats text of a chunk above the asker's tier | refuse |
 | `system_prompt_leak` | answer repeats the system prompt | refuse |
 | `injection_in_output` | "ignoro le istruzioni", "senza regole", `[SYSTEM]`, self-granted access | refuse |

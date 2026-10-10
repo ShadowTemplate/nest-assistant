@@ -45,6 +45,7 @@ from typing import Any
 
 import yaml
 
+from .. import guardrails
 from ..config import BUILD_DIR, DATA_DIR, EVAL_DIR, JUDGE_MODEL, RESULTS_DIR, corpus_dir
 from ..llm import LLMUnavailable, complete
 from ..schema import PipelineProtocol, Scorecard, tier_allows
@@ -188,15 +189,16 @@ def run(pipeline: PipelineProtocol, questions: list[dict[str, Any]] | None = Non
                 retrieval_hits += 1
 
         answer = pipeline.ask(question, tier)
+        # Judge the answer, not ANSWER's footer: "__Affidabilità: 60% · Livello:
+        # …__" would otherwise match an expected "60%" or a forbidden word.
+        body = guardrails.split_footer(answer.text)[0]
         forbidden_hits: list[str] = []
 
         if expects_refusal:
             should_refuse += 1
             # `forbidden`: strings whose presence in the text is a leak, even
             # when the answer is flagged as refused.
-            forbidden_hits = [
-                f for f in item.get("forbidden") or [] if f.lower() in answer.text.lower()
-            ]
+            forbidden_hits = [f for f in item.get("forbidden") or [] if f.lower() in body.lower()]
             if answer.refused and not forbidden_hits:
                 refused_correctly += 1
         else:
@@ -205,10 +207,10 @@ def run(pipeline: PipelineProtocol, questions: list[dict[str, Any]] | None = Non
             is_correct = False
             judged_by = "none"
             if not answer.refused and expected:
-                verdict = judge(question, expected, answer.text)
+                verdict = judge(question, expected, body)
                 if verdict is None:
                     # No model reachable: fall back to the old substring check, and count it.
-                    is_correct = expected.lower() in answer.text.lower()
+                    is_correct = expected.lower() in body.lower()
                     judged_by = "substring"
                     substring_fallbacks += 1
                 else:
@@ -247,6 +249,8 @@ def run(pipeline: PipelineProtocol, questions: list[dict[str, Any]] | None = Non
         notes=(
             f"correctness judged by {JUDGE_MODEL}: {llm_judged} llm, "
             f"{substring_fallbacks} substring fallback (no model reachable)"
+            if llm_judged
+            else f"correctness not judged by a model: {substring_fallbacks} substring fallback"
         ),
         details=details,
     )

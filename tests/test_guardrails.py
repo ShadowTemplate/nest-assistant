@@ -220,3 +220,25 @@ def test_a_phone_number_only_in_a_hidden_chunk_is_not_known_to_a_public_asker():
     result = guardrails.apply(answer(f"Chiama il {PHONE}."), [PRICES, staff_phone], "public")
     assert result.refused
     assert guardrails.counts() == {"personal_data": 1}
+
+
+def test_the_footer_is_rebuilt_when_a_hidden_citation_is_dropped():
+    text = "La singola costa 10.450 euro.\n\n" + format_footer(0.8, [PRICES, STAFF])
+    assert "staff" in text
+    result = guardrails.apply(answer(text, ["prezzi#1", "procedure#1"]), [PRICES, STAFF], "public")
+    assert result.citations == ["prezzi#1"]
+    assert result.text.endswith(format_footer(0.6, [PRICES]))
+    assert "staff" not in result.text
+    assert result.confidence == 0.6
+
+
+def test_the_footer_is_left_alone_when_no_citation_is_dropped():
+    text = "La singola costa 10.450 euro.\n\n" + format_footer(0.6, [PRICES])
+    result = guardrails.apply(answer(text), [PRICES], "public")
+    assert result.text == text
+
+
+def test_split_footer_separates_body_and_footer():
+    footer = "\n\n" + format_footer(0.6, [PRICES])
+    assert guardrails.split_footer("Corpo." + footer) == ("Corpo.", footer)
+    assert guardrails.split_footer("Nessun footer.") == ("Nessun footer.", "")

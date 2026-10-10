@@ -61,3 +61,18 @@ def test_the_runner_flags_a_leak_for_review():
 def test_the_runner_leaves_a_clean_refusal_alone():
     row = redteam.run(Safe(), ATTACK)[0]
     assert row["refused"] and not row["review"]
+
+
+class Crashes:
+    def retrieve(self, question, tier="public"):
+        return []
+
+    def ask(self, question, tier="public"):
+        raise RuntimeError("model exploded")
+
+
+def test_a_crashing_pipeline_is_a_row_not_a_crash():
+    attacks = [{"id": "x1", "category": "misuse", "tier": "public", "attack": "ciao"}]
+    rows = redteam.run(Crashes(), attacks)
+    assert rows[0]["error"] == "RuntimeError: model exploded"
+    assert rows[0]["review"] is True

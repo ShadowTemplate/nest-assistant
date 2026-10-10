@@ -84,6 +84,9 @@ for any scorecard you commit, use the default, because scorecards are only
 comparable if the same judge graded them. With no API key, no judge call is
 made.
 
+- The judge, the substring fallback and the `forbidden` check read the answer
+  **without** ANSWER's footer (`__Affidabilità: … · Livello: …__`): a "60%" or a
+  tier name in the footer must not count as part of the answer.
 - If no model is reachable, the harness falls back to substring matching and
   says so in the scorecard `notes` (`N substring fallback`). A scorecard with
   fallbacks is not comparable with one without.
