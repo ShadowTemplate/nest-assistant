@@ -2,7 +2,7 @@
 
 You own one function::
 
-    generate(q: str, chunks: list[Chunk], lang: str) -> Answer
+    generate(q: str, chunks: list[Chunk], lang: str, user_tier: Tier | None = None) -> Answer
 
 Your tasks
 ----------
@@ -35,7 +35,10 @@ from ..config import DEFAULT_LANG, PROMPTS_DIR
 from ..schema import TIERS, Answer, Chunk, Tier, tier_rank
 
 OWNER = "TEAM 3 — ANSWER"
-INTERFACE = "answer.generate(q: str, chunks: list[Chunk], lang: str) -> Answer"
+INTERFACE = (
+    "answer.generate(q: str, chunks: list[Chunk], lang: str, user_tier: Tier | None = None)"
+    " -> Answer"
+)
 STATUS = "real"  # `make board` reads this.
 
 REFUSAL_MARKER = "NON_TROVATO"
@@ -108,6 +111,10 @@ TIER_LABEL_IT = {"public": "pubblico", "resident": "residente", "staff": "staff"
 """How a tier is named in the footer."""
 
 
+ASKER_TIER_LABEL = "Il tuo livello"
+"""Footer label for the asker's own tier; guardrails looks for it when it rebuilds the footer."""
+
+
 def format_footer(confidence: float, chunks: list[Chunk], user_tier: Tier | None = None) -> str:
     """Footer line: the confidence score, the asker's tier and the tier requested.
 
@@ -118,7 +125,7 @@ def format_footer(confidence: float, chunks: list[Chunk], user_tier: Tier | None
     tier = max((c.tier for c in chunks), key=tier_rank, default=TIERS[0])
     parts = [f"Affidabilità: {confidence:.0%}"]
     if user_tier is not None:
-        parts.append(f"Il tuo livello: {TIER_LABEL_IT.get(user_tier, user_tier)}")
+        parts.append(f"{ASKER_TIER_LABEL}: {TIER_LABEL_IT.get(user_tier, user_tier)}")
     parts.append(f"Livello richiesto: {TIER_LABEL_IT.get(tier, tier)}")
     return f"__{' · '.join(parts)}__"
 
