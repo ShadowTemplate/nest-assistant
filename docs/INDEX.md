@@ -331,3 +331,35 @@ re-ranker gets the right chunk first **83%** of the time (right document first
 
 Bigger re-rankers (bge-reranker-v2-m3, 2.3 GB) were not tried: on a laptop CPU
 the small one already uses most of the one-second budget.
+
+### The fresh-question check (read this before trusting the table above)
+
+Every choice in this document was made on the same 15–18 questions. When TEAM 5
+added 32 public questions (PR #7), we re-measured on those alone: questions that
+played no part in any choice.
+
+| Never-seen questions: right chunk 1st / top 5 / MRR | e5-small hybrid | e5-base hybrid | e5-base + re-ranker |
+|---|---|---|---|
+| Real documents, Team 1 chunks (23 q)* | 43% / 70% / 0.56 | **57% / 78% / 0.66** | 35% / 78% / 0.57 |
+| Fixtures (31 q) | **90% / 97% / 0.93** | 87% / 94% / 0.91 | 77% / 94% / 0.84 |
+
+\* The new questions list only fixture files as sources, so for this check a
+real chunk counted as right if it contains the expected fact (questions whose
+fact appears in more than five chunks left out). Looser than a hand-checked set.
+
+- **e5-base holds up:** clearly better on the real documents (+14 points first
+  place, +8 top 5), one question worse out of 31 on the fixtures.
+- **The re-ranker does not:** on never-seen questions it is *worse* in first place
+  on both corpora. The failures are real, not label noise: *"C'è l'aria
+  condizionata?"* and *"C'è un parcheggio?"* put the deposit paragraph and the
+  admissions heading first, pushing the list of included services to 5th. Short
+  yes/no questions answered by a bullet list seem to defeat it. Its gains on the
+  original 18 questions were partly a fit to those questions.
+- **Decision:** the team chose to ship the re-ranker on anyway. It never changes
+  *which* five chunks ANSWER reads, only their order. **Revisit it first** when
+  TEAM 5's hand-checked set exists; switching it off is one setting
+  (`NEST_RERANK_MODEL=` in `.env`).
+
+**For TEAM 5:** add the real PDF names to `expected_sources` for q031–q062 (or tag
+them `corpus: fixtures`). As they stand, `make eval` on `data/` counts them as
+retrieval misses whatever the search does.
