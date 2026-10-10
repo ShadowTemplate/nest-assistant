@@ -23,13 +23,16 @@ from disk in under a millisecond. The saved index holds only vectors and ids,
 never text or tiers: tiers always come from the live corpus, so a stale index
 cannot hand anyone an out-of-date permission.
 
-Speed on a laptop: about 12 ms per question. The first question after a process
-starts takes about 5 s, which is loading the model. The bot should call
-`index.build_index()` at startup so no resident pays that cost.
+Speed on a laptop CPU: about 30 ms per question. **The first question after a
+process starts takes ~5 s** (loading the model). `index.warm()` does that work up
+front; **the bot should call it at startup** so no resident waits. It downloads
+nothing.
 
 ## W1-2.1 · Which embedding model, and why Italian matters
 
-**Chosen: `intfloat/multilingual-e5-small`** (`NEST_EMBEDDING_MODEL` in `config.py`).
+**Chosen: `intfloat/multilingual-e5-base`** (`NEST_EMBEDDING_MODEL` in `config.py`).
+It started as e5-small; the upgrade to e5-base, measured on Team 1's chunks, is
+at the end of this section.
 
 An embedding model places each text on a "map of meaning": texts that mean the
 same thing land close together, even when they share no words (*quanto costa una
@@ -65,6 +68,34 @@ What the numbers mean:
   exists only in an English document was ranked 11th, 56th and 44th by the three
   models. Keyword search (W1-2.3) or duplicating the fact in the Italian
   documents are the real fixes.
+
+### Upgrade: e5-small → e5-base, on Team 1's chunks
+
+Once Team 1's chunks existed, the weak spot was first place (50%). We tried a
+free idea first, then a bigger model. Both inside INDEX; no other team's code.
+
+| Hybrid search, right chunk 1st / top 3 / top 5 / MRR | e5-small | **e5-base** |
+|---|---|---|
+| Team 1 chunks (what the assistant searches) | 50% / 72% / 89% / 0.63 | **61% / 89% / 94% / 0.74** |
+| Fixtures | 93% / 100% / 100% / 0.97 | 93% / 100% / 100% / 0.96 |
+| Scratch chunks of the real PDFs | 71% / 82% / 88% / 0.77 | 65% / 82% / **94%** / 0.75 |
+| Time per question (laptop CPU) | 12 ms | 30 ms |
+
+`make eval` retrieval hit rate on Team 1's chunks: 89% → **94%**. Tier leaks 0.
+
+- **Rejected first: the section heading in front of each chunk** ("passage: {section}
+  {text}"). Same or worse on all three corpora (fixtures 93% → 87% first place).
+- **e5-base did not pass the rule we set in advance** (better first place, no lower
+  top 5, on every corpus): it loses one question on the scratch chunks. We chose
+  it anyway because Team 1's chunks are what the assistant actually searches, and
+  there it gains two questions in first place and the top 5 goes from 89% to 94%.
+  That is a judgement, written down so March can revisit it with more questions.
+- On Team 1's chunks e5-base is better on six questions (e.g. *"Chi abita nella
+  camera 120?"* 8th → 1st, *"Come segnalo un guasto?"* 4th → 1st) and worse on
+  three; the hybrid's keywords bring two of those (single and triple room
+  prices) back from 5th to 3rd.
+- Larger models (e5-large, bge-m3, 2.2 GB+) were not tested: CPU only, and the
+  1-second budget. A cross-encoder re-ranker was tested and not shipped (below).
 
 Caveats, written down so nobody over-reads the table:
 
@@ -165,7 +196,8 @@ MRR scores 1 for first place, ½ for second, ⅓ for third..., averaged.
 | C4 | leave chunks with no shared word out of the fusion | 87% / 93% / 0.91 | 65% / 82% / 0.72 |
 | C5 | keyword weight 0–1.5 tried; 0.5 best on fixtures | 93% / 93% / 0.94 | 65% / 82% / 0.72 |
 | C6 | meaning picks 5, keywords re-order them | 93% / 100% / 0.96 | 71% / 88% / 0.77 |
-| **C7** | **fusion `k` 60 → 2 inside the re-ordering** | **93% / 100% / 0.97** | **71% / 88% / 0.77** |
+| C7 | fusion `k` 60 → 2 inside the re-ordering | 93% / 100% / 0.97 | 71% / 88% / 0.77 |
+| **C8** | **embedding model e5-small → e5-base** | **93% / 100% / 0.96** | **65% / 94% / 0.75** |
 
 C6/C7 against meaning alone, on the real documents: right chunk first 65% → **71%**,
 in top 3 76% → **82%**, right document first 76% → **82%**, MRR 0.73 → **0.77**,
@@ -200,9 +232,10 @@ were not used for any choice above.
 |---|---|---|---|---|---|---|
 | meaning only | 50% | 61% | 89% | 0.62 | 67% | 0 |
 | keyword only | **56%** | **72%** | 83% | **0.66** | **72%** | 0 |
-| **hybrid (C7, what `search()` uses)** | 50% | **72%** | **89%** | 0.63 | 67% | 0 |
+| hybrid (C7, e5-small) | 50% | **72%** | **89%** | 0.63 | 67% | 0 |
+| **hybrid with e5-base (C8, what `search()` uses)** | **61%** | **89%** | **94%** | **0.74** | **89%** | 0 |
 
-`make eval` (no API key, retrieval only): hit rate 89%, tier leaks 0, now with a
+`make eval` (no API key, retrieval only): hit rate 89% (94% with e5-base), tier leaks 0, now with a
 staff document in the corpus.
 
 What changed with Team 1's chunking:
@@ -219,7 +252,7 @@ What changed with Team 1's chunking:
 
 **Next:** Team 1's chunks are now the real corpus, so they should become the
 dev set, and the comparison needs a fresh, larger question set to test on
-(TEAM 5, W1-5.1). Until then, keep the setting chosen by the rule.
+(TEAM 5, W1-5.1). Until then, keep the fusion settings chosen by the rule.
 
 ### Done-when: a query hybrid gets right and vectors get wrong
 
@@ -259,3 +292,66 @@ uv run python tools/retrieval_report.py --html     # draws every saved run
 
 Both write under `build/` (gitignored): the report quotes chunk ids and, on
 `data/`, describes Nest's documents.
+
+## Tried, not shipped: a cross-encoder re-ranker
+
+After e5-base, Team 1's chunks still had the right chunk first only 61% of the
+time. We looked at every miss before trying anything else:
+
+| Cause | Questions | Fix |
+|---|---|---|
+| Two chunks look alike to a one-vector model: *fees* (`6. RETTA`) and *merit support* (`7. SOSTEGNO AL MERITO`) both list room types and euro amounts | single / double / triple room price | open: a re-ranker was tried (below) |
+| The fact exists only in the English brochure | deposit | data: put it in the Italian documents |
+| The automatic "right chunk" label is blunt (contains a word ≠ answers the question) | breakdown report, online interview | TEAM 5: a hand-checked question set |
+| A superseded document competes with the current one | training weekend, prices | TEAM 1: drop the *Proposta* brochure from the manifest |
+
+**What-if for TEAM 1, measured on the shipped search (e5-base hybrid):** with the
+superseded *Proposta* brochure left out of the corpus, right chunk first goes
+61% → 67% and right document first 89% → 94%. Removing it is TEAM 1's call.
+
+**What we tried.** A multilingual cross-encoder
+(`cross-encoder/mmarco-mMiniLMv2-L12-H384-v1`, 470 MB) that reads the question and
+a chunk *together*, used to re-order the top five. On the 18 questions every
+choice had been made on, it looked good:
+
+| Original questions: right chunk 1st / top 3 / MRR | e5-base hybrid | + re-ranker |
+|---|---|---|
+| Team 1 chunks | 61% / 89% / 0.74 | 72% / 94% / 0.83 |
+| Scratch chunks | 65% / 82% / 0.75 | 76% / 94% / 0.85 |
+| Fixtures | 93% / 100% / 0.96 | 100% / 100% / 1.00 |
+
+**Why it is not shipped: the fresh-question check.** When TEAM 5 added 32 public
+questions (PR #7), we re-measured on those alone: questions that played no part
+in any choice.
+
+| Never-seen questions: right chunk 1st / top 5 / MRR | e5-small hybrid | **e5-base hybrid (shipped)** | e5-base + re-ranker |
+|---|---|---|---|
+| Real documents, Team 1 chunks (23 q)* | 43% / 70% / 0.56 | **57% / 78% / 0.66** | 35% / 78% / 0.57 |
+| Fixtures (31 q) | **90% / 97% / 0.93** | 87% / 94% / 0.91 | 77% / 94% / 0.84 |
+
+\* The new questions list only fixture files as sources, so for this check a
+real chunk counted as right if it contains the expected fact (questions whose
+fact appears in more than five chunks left out). Looser than a hand-checked set.
+
+- **e5-base holds up:** clearly better on the real documents (+14 points first
+  place, +8 top 5), one question worse out of 31 on the fixtures.
+- **The re-ranker does not:** on never-seen questions it is *worse* in first place
+  on both corpora. The failures are real, not label noise: *"C'è l'aria
+  condizionata?"* and *"C'è un parcheggio?"* put the deposit paragraph and the
+  admissions heading first, pushing the list of included services to 5th. Its
+  gains on the original 18 questions were partly a fit to those questions.
+- It would also have cost 470 MB per laptop and made the first question ~18 s.
+
+**A correction.** The first version of PR #14 described the re-ranker as shipped,
+but `search()` still called the hybrid ranking: only `search_with_scores`'s
+default had changed, and the pipeline calls `search()`. The review caught it.
+The re-ranker has been removed, and `test_search_uses_the_hybrid_ranking` now
+checks which ranking `search()` actually calls, not just its output.
+
+**For later.** The look-alike problem is real. Worth re-testing with a stronger
+re-ranker once there is a GPU and TEAM 5's hand-checked question set, judged on
+never-seen questions from the start.
+
+**For TEAM 5:** add the real PDF names to `expected_sources` for q031–q062 (or tag
+them `corpus: fixtures`). As they stand, `make eval` on `data/` counts them as
+retrieval misses whatever the search does.

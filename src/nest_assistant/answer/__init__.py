@@ -43,6 +43,38 @@ REFUSAL_MARKER = "NON_TROVATO"
 
 _CITATION_RE = re.compile(r"\s*\[([^\[\]]+#[^\[\]]+)\]")
 
+_GAP_NEGATION_RE = re.compile(
+    r"\b(?:non|nessun\w*|parzial\w*|not|no|only\s+partial)\b|n't\b", re.IGNORECASE
+)
+_GAP_SUBJECT_RE = re.compile(
+    r"\b(?:document[oi]|documents?|fonti?|contesto|informazion\w*|dettagl\w*|indicat\w*|specificat\w*"
+    r"|menzionat\w*|riportat\w*|descritt\w*|trovat[oaie]|trovare"
+    r"|sources?|context|information|details?|specif\w*|mention\w*|stated?)\b",
+    re.IGNORECASE,
+)
+_SENTENCE_RE = re.compile(r"[^.!?\n]+")
+
+
+def admits_gap(text: str) -> bool:
+    """True if a sentence of ``text`` says the documents do not hold what was asked.
+
+    "I documenti non specificano il costo", "non è indicato alcun prezzo",
+    "dai documenti emerge solo una descrizione parziale": the model knows the
+    answer is not there and answered anyway. A negation alone is not enough —
+    "non sono disponibili camere triple" is a complete answer — so the same
+    sentence must also be *about the information*: documents, details, what is
+    indicated or mentioned. Italian and English behave the same way.
+
+    A heuristic over phrasings, not understanding: it misses a gap the model
+    words differently, and it would flag "non è indicato per soggiorni brevi".
+    Both cases are in the tests.
+    """
+    return any(
+        _GAP_NEGATION_RE.search(sentence) and _GAP_SUBJECT_RE.search(sentence)
+        for sentence in _SENTENCE_RE.findall(text)
+    )
+
+
 REFUSAL_IT = (
     "Non ho trovato questa informazione nei documenti di Nest. "
     "Per essere sicuro, scrivi alla segreteria."
@@ -51,20 +83,29 @@ REFUSAL_IT = (
 sentence that decides whether "I don't know" sounds trustworthy or broken."""
 
 
+CONFIDENCE_ONE_DOCUMENT = 0.6
+CONFIDENCE_CORROBORATED = 0.8
+"""``Answer.confidence`` has exactly three values, and they are levels, not
+probabilities: 0.0 refused; 0.6 answered from one document; 0.8 answered from
+two or more documents that the model cited together. Nothing here was
+calibrated against outcomes, so do not threshold on "0.7" anywhere downstream:
+the refusal decision is already made by :func:`generate`, and ``refused`` is the
+field to read."""
+
+
+def estimate_confidence(cited: list[str]) -> float:
+    """Confidence level of an answer that passed every refusal check.
+
+    Counts distinct *documents*, not chunk ids: two chunks of the same PDF are
+    one witness. Retrieval scores are not used: with the e5 model every question
+    scores 0.76-0.89, answerable or not.
+    """
+    documents = {cid.rsplit("#", 1)[0] for cid in cited}
+    return CONFIDENCE_CORROBORATED if len(documents) >= 2 else CONFIDENCE_ONE_DOCUMENT
+
+
 TIER_LABEL_IT = {"public": "pubblico", "resident": "residente", "staff": "staff"}
 """How a tier is named in the footer."""
-
-
-def score_confidence(raw: str, cited: list[str], supplied: int) -> float:
-    """How much of the raw answer is backed by a valid citation, in 0.4..0.95.
-
-    Heuristic, not a probability: the share of sentences that carry a citation
-    (0.4 base + up to 0.5), plus a small bonus when more than one source agrees.
-    """
-    sentences = [s for s in re.split(r"(?<=[.!?])\s+|\n+", raw) if s.strip()]
-    grounded = sum(1 for s in sentences if _CITATION_RE.search(s)) / max(len(sentences), 1)
-    bonus = 0.05 if len(cited) > 1 and supplied > 1 else 0.0
-    return round(min(0.4 + 0.5 * grounded + bonus, 0.95), 2)
 
 
 def format_footer(confidence: float, chunks: list[Chunk]) -> str:
@@ -121,7 +162,12 @@ def generate(q: str, chunks: list[Chunk], lang: str = DEFAULT_LANG) -> Answer:
     :func:`load_system_prompt` to get your prompt. Both exist so that October's
     hosted model and October-2027's self-hosted one look identical from here.
 
-    W1-3.1: grounded generation. Refusal thresholds are W1-3.2.
+    Refusal is decided here, by rules, in this order: no chunks; model
+    unreachable; the model wrote ``NON_TROVATO``; no valid citation (it spoke
+    from memory); an invented citation (it made at least part of it up); the
+    text admits the documents do not hold the answer (:func:`admits_gap`). A
+    partial answer is a refusal: "costa X, ma i documenti non dicono quando si
+    paga" invites the parent to fill the gap with a guess.
     """
     refusal = Answer(text=REFUSAL_IT, citations=[], confidence=0.0, refused=True)
     if not chunks:
@@ -137,15 +183,18 @@ def generate(q: str, chunks: list[Chunk], lang: str = DEFAULT_LANG) -> Answer:
         return refusal
 
     supplied = {c.id for c in chunks}
-    cited = [cid for cid in dict.fromkeys(_CITATION_RE.findall(raw)) if cid in supplied]
+    found = list(dict.fromkeys(_CITATION_RE.findall(raw)))
+    cited = [cid for cid in found if cid in supplied]
     text = _CITATION_RE.sub("", raw)
     text = re.sub(r"[ \t]+([.,;:!?])", r"\1", re.sub(r"[ \t]{2,}", " ", text)).strip()
 
-    # No valid citation means the model spoke from memory: treat it as a refusal.
-    if not cited or not text:
+    # No valid citation: it spoke from memory. An invented one: it made part of it up.
+    if not cited or not text or len(cited) < len(found):
+        return refusal
+    if admits_gap(text):
         return refusal
 
-    confidence = score_confidence(raw, cited, len(chunks))
+    confidence = estimate_confidence(cited)
     cited_chunks = [c for c in chunks if c.id in cited]
     text = f"{text}\n\n{format_footer(confidence, cited_chunks)}"
     return Answer(text=text, citations=cited, confidence=confidence, refused=False)
@@ -155,6 +204,9 @@ __all__ = [
     "generate",
     "load_system_prompt",
     "format_context",
+    "estimate_confidence",
+    "format_footer",
+    "admits_gap",
     "REFUSAL_IT",
     "OWNER",
     "INTERFACE",
