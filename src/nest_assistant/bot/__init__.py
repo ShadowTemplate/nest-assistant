@@ -36,7 +36,7 @@ from ..schema import Answer
 
 OWNER = "TEAM 4 — CHAT"
 INTERFACE = "bot.run()"
-STATUS = "stub"  # flip to "real" when Telegram works. `make board` reads this.
+STATUS = "real"  # Telegram polling works. `make board` reads this.
 
 WELCOME_IT = (
     "Ciao! Sono l'assistente di Nest. Posso rispondere a domande su prezzi, "
@@ -87,35 +87,86 @@ def handle_message(text: str, user_id: str, pipeline: Pipeline | None = None) ->
 
 
 # ---------------------------------------------------------------------------
-# TEAM 4 — REPLACE ME
+# Telegram transport. No logic here: every reply comes from handle_message().
 # ---------------------------------------------------------------------------
-def run() -> None:
-    """Start the bot.
+ERROR_IT = (
+    "Scusami, ho avuto un problema tecnico e non riesco a rispondere adesso. "
+    "Riprova tra poco; se serve, scrivi alla segreteria di Nest."
+)
 
-    Contract you must satisfy:
 
-    * Long-polling is fine for W1 (no public URL, no webhook, no ngrok). Moving
-      to a proper service on the Nest server is a W2 task — do not do it today.
-    * ``/start``, ``/help``, ``/reset`` all work.
-    * The token is read from the environment. Prove it: ``git grep`` your token
-      and find nothing.
-    * A crash in the pipeline must not kill the bot. Reply with something honest
-      and stay up.
-    * Every reply passes through :func:`handle_message`, so that the console
-      version and the Telegram version cannot drift apart.
+def _build_application(token: str, pipeline: Pipeline):
+    import asyncio
+    import logging
+    import time
 
-    The stub runs a console loop with the *real* pipeline behind it, so the rest
-    of the room can talk to the assistant before you have a bot token working.
-    """
-    load_dotenv()
-    if telegram_bot_token() is None:
-        print("TELEGRAM_BOT_TOKEN not set — running the console bot instead.")
-        print("(That is fine. Set it in .env when Team 4 is ready.)\n")
-    else:
-        print("TELEGRAM_BOT_TOKEN found, but bot.run() is still the stub.")
-        print("TEAM 4: this is your task. Console loop for now.\n")
+    from telegram.ext import Application, CommandHandler, ContextTypes, MessageHandler, filters
 
-    pipeline = Pipeline()
+    from .access import NOT_ALLOWED_IT, is_allowed
+    from .chatlog import end_session, log_exchange
+
+    log = logging.getLogger("nest_assistant.bot")
+
+    async def reply(update, context: ContextTypes.DEFAULT_TYPE) -> None:
+        message = update.effective_message
+        if message is None or update.effective_user is None or not message.text:
+            return
+        text = message.text
+        if text.startswith("/"):  # "/start@NestBot" -> "/start"
+            text = text.split("@", 1)[0]
+        user_id = f"telegram:{update.effective_user.id}"
+        started = time.monotonic()
+        if not is_allowed(user_id):  # no pipeline call: unknown people cost nothing
+            denial = NOT_ALLOWED_IT.format(user_id=user_id)
+            try:
+                await message.reply_text(denial)
+            except Exception:  # noqa: BLE001
+                log.exception("could not send the refusal")
+            log_exchange(
+                user_id=user_id,
+                chat_id=message.chat_id,
+                question=text,
+                answer=denial,
+                duration_ms=int((time.monotonic() - started) * 1000),
+                denied=True,
+            )
+            return
+        error: Exception | None = None
+        try:
+            await context.bot.send_chat_action(message.chat_id, "typing")
+            answer = await asyncio.to_thread(handle_message, text, user_id, pipeline)
+        except Exception as exc:  # noqa: BLE001 - a pipeline crash must not kill the bot
+            log.exception("handle_message failed")
+            error, answer = exc, ERROR_IT
+        try:
+            await message.reply_text(answer)
+        except Exception as exc:  # noqa: BLE001 - Telegram refused or timed out
+            log.exception("could not send the reply")
+            error = error or exc
+        log_exchange(
+            user_id=user_id,
+            chat_id=message.chat_id,
+            question=text,
+            answer=answer,
+            duration_ms=int((time.monotonic() - started) * 1000),
+            error=error,
+        )
+        if text.strip().lower() in {"/reset", "reset"}:  # same words handle_message accepts
+            end_session(user_id)  # the /reset is the last line of the old session
+
+    async def on_error(update, context: ContextTypes.DEFAULT_TYPE) -> None:
+        log.error("unhandled error in update handler", exc_info=context.error)
+
+    app = Application.builder().token(token).build()
+    app.add_handler(CommandHandler(["start", "help", "reset"], reply))
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, reply))
+    app.add_error_handler(on_error)
+    return app
+
+
+def run_console(pipeline: Pipeline | None = None) -> None:
+    """Console loop with the real pipeline behind it. Same handle_message()."""
+    pipeline = pipeline or Pipeline()
     print("Nest Assistant — console mode. Ctrl-C to quit.\n")
     print(WELCOME_IT + "\n")
     while True:
@@ -132,8 +183,30 @@ def run() -> None:
         print(f"\nnest > {handle_message(text, user_id='console:local', pipeline=pipeline)}\n")
 
 
+def run() -> None:
+    """Start the bot: Telegram long-polling, or the console if there is no token."""
+    import logging
+
+    load_dotenv()
+    token = telegram_bot_token()
+    if token is None:
+        print("TELEGRAM_BOT_TOKEN not set — running the console bot instead.\n")
+        run_console()
+        return
+
+    logging.basicConfig(format="%(asctime)s %(name)s %(levelname)s %(message)s", level=logging.INFO)
+    # httpx logs full request URLs at INFO, and Telegram puts the token in the URL.
+    for noisy in ("httpx", "httpcore"):
+        logging.getLogger(noisy).setLevel(logging.WARNING)
+
+    app = _build_application(token, Pipeline())
+    print("Telegram bot in polling mode. Ctrl-C to stop.")
+    app.run_polling(allowed_updates=["message"], drop_pending_updates=True)
+
+
 __all__ = [
     "run",
+    "run_console",
     "handle_message",
     "format_reply",
     "WELCOME_IT",
