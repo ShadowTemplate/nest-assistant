@@ -43,12 +43,33 @@ REFUSAL_MARKER = "NON_TROVATO"
 
 _CITATION_RE = re.compile(r"\s*\[([^\[\]]+#[^\[\]]+)\]")
 
+_HEDGE_RE = re.compile(
+    r"non (?:\w+ )?(?:dicono|specific\w+|risulta|risultano|indica\w*|precisa\w*)", re.IGNORECASE
+)
+"""The model admits a gap inside an otherwise answered question."""
+
 REFUSAL_IT = (
     "Non ho trovato questa informazione nei documenti di Nest. "
     "Per essere sicuro, scrivi alla segreteria."
 )
 """The refusal message. Parents will read this. Write it with care — it is the
 sentence that decides whether "I don't know" sounds trustworthy or broken."""
+
+
+def estimate_confidence(text: str, cited: list[str], invented: int) -> float:
+    """How far to trust a non-refused answer, 0..1. A heuristic, not a probability.
+
+    Retrieval scores cannot do this job: with the e5 model every question scores
+    0.76–0.89, answerable or not. What we can see instead: how many distinct
+    chunks back the answer, whether the model cited ids it was never given, and
+    whether it admits a gap in its own text. Never 1.0: nothing here is proof.
+    """
+    score = 0.6 + (0.1 if len(cited) >= 2 else 0.0)
+    if invented:
+        score -= 0.2
+    if _HEDGE_RE.search(text):
+        score -= 0.2
+    return round(min(0.9, max(0.1, score)), 2)
 
 
 def load_system_prompt(lang: str = DEFAULT_LANG) -> str:
@@ -111,7 +132,8 @@ def generate(q: str, chunks: list[Chunk], lang: str = DEFAULT_LANG) -> Answer:
         return refusal
 
     supplied = {c.id for c in chunks}
-    cited = [cid for cid in dict.fromkeys(_CITATION_RE.findall(raw)) if cid in supplied]
+    found = list(dict.fromkeys(_CITATION_RE.findall(raw)))
+    cited = [cid for cid in found if cid in supplied]
     text = _CITATION_RE.sub("", raw)
     text = re.sub(r"[ \t]+([.,;:!?])", r"\1", re.sub(r"[ \t]{2,}", " ", text)).strip()
 
@@ -119,13 +141,19 @@ def generate(q: str, chunks: list[Chunk], lang: str = DEFAULT_LANG) -> Answer:
     if not cited or not text:
         return refusal
 
-    return Answer(text=text, citations=cited, confidence=0.5, refused=False)
+    return Answer(
+        text=text,
+        citations=cited,
+        confidence=estimate_confidence(text, cited, len(found) - len(cited)),
+        refused=False,
+    )
 
 
 __all__ = [
     "generate",
     "load_system_prompt",
     "format_context",
+    "estimate_confidence",
     "REFUSAL_IT",
     "OWNER",
     "INTERFACE",
