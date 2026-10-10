@@ -223,6 +223,8 @@ def _pdf(pages: list[list[str]]) -> bytes:
 
 
 def test_pdf_path_end_to_end(tmp_path: Path):
+    pytest.importorskip("pypdf", reason="needs the ingest extra: uv sync --extra ingest")
+
     def prose(n: int) -> list[str]:  # distinct per page, or it would count as furniture
         return [
             f"La retta della camera singola e di 10.450 euro all anno, rata numero {n}.",
