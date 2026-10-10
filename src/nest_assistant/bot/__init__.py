@@ -8,7 +8,7 @@ Your tasks
 ----------
 W1-4.1  Telegram bot          -> a real bot, in a real chat, answering
 W1-4.2  Identity resolution   -> see ``nest_assistant/identity``
-W1-4.3  Conversation context  -> droppable
+W1-4.3  Conversation context  -> see ``bot/context.py``
 
 You get the visible win of the day, and you get it early: nobody in the room can
 see an embedding, but everybody can see a phone. When it works, say so loudly.
@@ -33,6 +33,7 @@ from ..config import load_dotenv, telegram_bot_token
 from ..identity import resolve
 from ..pipeline import Pipeline
 from ..schema import Answer
+from . import context
 
 OWNER = "TEAM 4 — CHAT"
 INTERFACE = "bot.run()"
@@ -80,10 +81,16 @@ def handle_message(text: str, user_id: str, pipeline: Pipeline | None = None) ->
     if command in {"/help", "help", "/aiuto"}:
         return HELP_IT
     if command in {"/reset", "reset"}:
+        context.clear(user_id)
         return "Ok, ricominciamo. Fammi pure una domanda."
 
     tier = resolve(user_id)
-    return format_reply(pipeline.ask(text, tier))
+    # The retriever sees one question at a time: "E la doppia?" must reach it as
+    # "Quanto costa una camera doppia?".
+    question = context.standalone_question(user_id, text)
+    answer = pipeline.ask(question, tier)
+    context.record(user_id, question, answer.text)
+    return format_reply(answer)
 
 
 # ---------------------------------------------------------------------------

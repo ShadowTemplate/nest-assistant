@@ -109,6 +109,13 @@ def embedding_model_cached(model: str | None = None) -> bool:
     return snapshots.is_dir() and any(snapshots.iterdir())
 
 
+CONTEXT_WINDOW_MINUTES = int(os.environ.get("NEST_CONTEXT_MINUTES", "10"))
+"""TEAM 4 — how long a conversation stays "the same conversation". Messages older
+than this are not shown to the question rewriter. See ``bot/context.py``."""
+
+CONTEXT_MAX_TURNS = int(os.environ.get("NEST_CONTEXT_TURNS", "4"))
+"""TEAM 4 — at most this many recent exchanges go into the rewriter's prompt."""
+
 DEFAULT_K = int(os.environ.get("NEST_K", "5"))
 DEFAULT_LANG = os.environ.get("NEST_LANG", "it")
 
