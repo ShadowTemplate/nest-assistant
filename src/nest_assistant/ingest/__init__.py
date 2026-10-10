@@ -68,9 +68,13 @@ def _load_manifest(src: Path) -> dict[str, _Entry]:
             f"{path} not found. Without a manifest there are no tiers, and a document "
             "with no tier is not ingested."
         )
-    raw = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+    raw = yaml.safe_load(path.read_text(encoding="utf-8"))
+    if not isinstance(raw, dict) or not isinstance(raw.get("documents"), list):
+        raise ValueError(f"{path}: expected a top-level 'documents:' list")
     entries: dict[str, _Entry] = {}
-    for item in raw.get("documents", []):
+    for item in raw["documents"]:
+        if not isinstance(item, dict):
+            raise ValueError(f"{path}: every document entry must be a mapping, got {item!r}")
         name, tier, lang = item.get("filename"), item.get("tier"), item.get("lang")
         if not name or tier not in TIERS or lang not in {"it", "en"}:
             raise ValueError(f"{path}: bad entry {name!r}: tier={tier!r} lang={lang!r}")
@@ -134,15 +138,20 @@ _DATES = re.compile(
     r"september|october|november|december)",
     re.I,
 )
+_PRICE_OR_TIME = re.compile(r"[€$£]|\b(euro|eur)\b|\b\d{1,2}[:.]\d{2}\b", re.I)
 
 
 def _is_label_page(lines: list[str]) -> bool:
     """Cover, map, floor plan, index of icons: short labels and almost no prose.
 
     A page with a schedule (date ranges) is kept even if it looks like labels,
-    because that is the infographic with the weekend dates.
+    because that is the infographic with the weekend dates. So is any page with a
+    price or an opening time: a table of rates has short lines too, and dropping
+    it would silently delete the facts people ask about.
     """
     if sum(bool(_DATES.search(ln)) for ln in lines) >= 2:
+        return False
+    if any(_PRICE_OR_TIME.search(ln) for ln in lines):
         return False
     if len(lines) < 3:
         return True
@@ -209,13 +218,17 @@ def _layout_title(page: list[str], layout: str) -> str | None:
     return None
 
 
-def _clean_pages(pages: list[tuple[str, str]], name: str = "") -> list[list[str]]:
+def _clean_pages(
+    pages: list[tuple[str, str]], name: str = "", *, pdf: bool = False
+) -> list[list[str]]:
     """Per page: normalised lines with furniture removed.
 
     Furniture is any line that repeats on at least half the pages (running
     headers, footers, the ``Guida / Salvastudente`` banner), page numbers,
-    "back to index" links and form feeds. Only applied to multi-page documents,
-    so a short text file can never lose a line to this rule.
+    "back to index" links and form feeds. Repeated lines only count in documents
+    of three or more pages, so a short text file can never lose a line to that
+    rule. Page numbers are only removed from PDFs: in Markdown or text a line
+    that is just ``12`` or ``1/2`` is content.
     """
     cleaned = [_lines(text) for text, _ in pages]
     if len(cleaned) >= 3:
@@ -232,10 +245,12 @@ def _clean_pages(pages: list[tuple[str, str]], name: str = "") -> list[list[str]
         page = [
             ln
             for ln in page
-            if ln not in furniture and not _NAV.match(ln) and not _PAGE_NO.match(ln)
+            if ln not in furniture and not _NAV.match(ln) and not (pdf and _PAGE_NO.match(ln))
         ]
         if layout and _is_label_page(page):  # layout text exists only for PDFs
-            log.info("%s p.%d skipped: labels, not prose", name, number)
+            log.warning(
+                "%s p.%d skipped as labels, not prose: check it held no facts", name, number
+            )
             continue
         page = _in_layout_order(page, layout)
         if title := _layout_title(page, layout):
@@ -360,10 +375,9 @@ def _sections(lines: list[str]) -> list[_Section]:
             else:
                 path, caps = path[: level - 1] + [text], None
             title = " > ".join(path + ([caps] if caps else []))
-        elif _is_question(ln) or _BULLET.match(ln) or ln == "":
+        elif _is_question(ln) or _BULLET.match(ln):
             flush_unit()
-            if ln:
-                cur.append(ln)
+            cur.append(ln)
         else:
             cur.append(ln)
     flush_section(title)
@@ -375,7 +389,8 @@ def _split_long(unit: str) -> list[str]:
         return [unit]
     pieces: list[str] = []
     cur = ""
-    for part in re.split(r"(?<=\n)|(?<=[.!?;]) ", unit):
+    # Zero-width split points, so the space after a sentence stays with the next one.
+    for part in re.split(r"(?<=\n)|(?<=[.!?;])(?= )", unit):
         if cur and len(cur) + len(part) > TARGET_CHARS:
             pieces.append(cur.strip())
             cur = ""
@@ -451,12 +466,14 @@ def build_chunks(src: Path | None = None) -> list[Chunk]:
         if path.suffix.lower() not in _SUPPORTED:
             log.warning("NOT INGESTED: %s has unsupported format %s", path.name, path.suffix)
             continue
-        pages = _clean_pages(_read_pages(path), path.name)
-        lines = (
-            [ln for page in pages for ln in page if not ln.startswith("# ")]
-            if (path.suffix.lower() == ".txt")
-            else [ln for page in pages for ln in page]
-        )
+        suffix = path.suffix.lower()
+        pages = _clean_pages(_read_pages(path), path.name, pdf=suffix == ".pdf")
+        lines = [ln for page in pages for ln in page]
+        if suffix == ".txt":
+            # In .txt files, "# ..." lines are comments for the people who maintain
+            # the file (provenance, format notes), not text to answer from. In .md
+            # the same line is a heading, so this is .txt only.
+            lines = [ln for ln in lines if not ln.startswith("# ")]
         n = 0
         for section in _sections(lines):
             for text in _pack(section.units):

@@ -30,11 +30,16 @@ justify this choice over a window belong there, not here.
    No entry means not ingested, and a warning names the file. No manifest at all
    raises. There is no default tier.
 2. **Extract.** PDF text from `pypdf`; Markdown and text as they are.
-3. **Clean.** Remove form feeds, page numbers, "back to index" links, and any line
-   repeated on at least half the pages (running headers). Rejoin words hyphenated
+3. **Clean.** Remove form feeds, "back to index" links, and any line repeated on
+   at least half the pages of a document of three or more pages (running headers).
+   Page numbers (`12`, `1/2`, `pag. 3 di 9`) are removed from PDFs only; in `.md`
+   and `.txt` such a line is content. In `.txt` files, lines starting with `# ` are
+   maintainer comments (provenance, format notes) and are dropped; in `.md` the same
+   line is a heading and is kept. Rejoin words hyphenated
    across lines and reflow wrapped prose; short lines (tables, lists) keep their
    line breaks. Pages that are only labels (maps, floor plans, covers) are dropped
-   and logged at INFO; a page with schedule dates is kept.
+   and logged at **WARNING**, so a wrongly dropped page is visible. A page with
+   schedule dates, a currency symbol or an opening time is never dropped as labels.
 4. **Order.** For single-column PDF pages, lines are put back in on-page order
    (drawing order can place a table after the next heading), and the page title is
    moved to the top.
@@ -57,5 +62,23 @@ that is a decision for the coordinators.
 - Multi-column brochure pages are read column by column in PDF order, which is
   mostly right but not guaranteed.
 - A few chunk sections are slightly off where a page title is a sentence fragment.
+- Blank lines are discarded on read, so paragraphs in `.md` files merge into one
+  unit; headings and bullets still split them.
+- The label-page rule is a heuristic. Read the WARNING lines after each ingest of
+  new documents; a page of bare numbers (room codes, years) with no price or time
+  can still be dropped.
 - Scanned (image-only) PDFs produce no text; they are reported, not OCR'd.
 - `.docx` is supported in code but has not been exercised on a real file.
+
+## Checking the numbers above
+
+CI cannot check "7 documents, about 110 chunks": it only sees the synthetic
+fixtures. On a machine with the real `data/`:
+
+```
+make ingest        # writes build/chunks.jsonl, warnings name anything skipped
+python -c "import json,collections; c=collections.Counter(json.loads(l)['source'] for l in open('build/chunks.jsonl')); print(len(c), sum(c.values())); print(c)"
+```
+
+Expect 7 sources and a total near 110. Also read the `skipped as labels` warnings.
+Re-check after the documents change; if the counts drift a lot, update this file.
