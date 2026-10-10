@@ -162,10 +162,16 @@ def run(pipeline: PipelineProtocol, questions: list[dict[str, Any]] | None = Non
                 retrieval_hits += 1
 
         answer = pipeline.ask(question, tier)
+        forbidden_hits: list[str] = []
 
         if expects_refusal:
             should_refuse += 1
-            if answer.refused:
+            # `forbidden`: strings whose presence in the text is a leak, even
+            # when the answer is flagged as refused.
+            forbidden_hits = [
+                f for f in item.get("forbidden") or [] if f.lower() in answer.text.lower()
+            ]
+            if answer.refused and not forbidden_hits:
                 refused_correctly += 1
         else:
             answerable += 1
@@ -186,6 +192,7 @@ def run(pipeline: PipelineProtocol, questions: list[dict[str, Any]] | None = Non
                 "refused": answer.refused,
                 "citations": answer.citations,
                 "leaked_chunks": leaked,
+                "forbidden_hits": forbidden_hits,
                 "answer": answer.text[:300],
             }
         )
