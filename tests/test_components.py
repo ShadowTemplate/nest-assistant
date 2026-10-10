@@ -97,10 +97,6 @@ def test_search_matches_meaning_not_words(tmp_path: Path, monkeypatch: pytest.Mo
     assert index.search("quanto costa una stanza singola?", "public", k=1)[0].id == "prezzi#1"
 
 
-@pytest.mark.skip(
-    reason="TEAM 2 — task W1-2.2. Delete this line and make the test pass. "
-    "Until you do, `make eval` reports tier leaks and the board stays red."
-)
 def test_public_never_sees_private():
     """A `public` caller must never receive a resident or staff chunk.
 
@@ -109,12 +105,33 @@ def test_public_never_sees_private():
     Try it against every question in eval/questions.yaml, not just this one —
     the leak you have not thought of is the one that matters.
     """
+    questions = ["morosità", "regolamento", "prezzi", "procedure interne"]
+    questions += [q["question"] for q in evaluate.load_questions(corpus="all")]
     for tier in TIERS:
-        for question in ["morosità", "regolamento", "prezzi", "procedure interne"]:
-            for chunk in index.search(question, tier, k=10):
+        for question in questions:
+            for chunk in index.search(question, tier, k=100):
                 assert tier_allows(tier, chunk.tier), (
                     f"{tier} caller received a {chunk.tier} chunk: {chunk.id}"
                 )
+
+
+def test_chunk_with_broken_tier_is_hidden(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+    """A typo in a tier label must hide the chunk, not show it to everyone."""
+    corpus = [
+        Chunk("ok#1", "Orari della mensa.", "a.md", "public", "it"),
+        Chunk("typo#1", "Procedura morosità.", "b.md", "Staff ", "it"),  # type: ignore[arg-type]
+    ]
+    monkeypatch.setattr(index, "load_corpus", lambda: corpus)
+    monkeypatch.setattr(index, "INDEX_DIR", tmp_path)
+    monkeypatch.setattr(index, "EMBEDDINGS_PATH", tmp_path / "embeddings.npy")
+    monkeypatch.setattr(index, "META_PATH", tmp_path / "meta.json")
+    for tier in TIERS:
+        assert [c.id for c in index.search("morosità", tier, k=10)] == ["ok#1"]
+
+
+def test_unknown_caller_tier_is_refused():
+    with pytest.raises(ValueError):
+        index.search("prezzi", "admin", k=5)  # type: ignore[arg-type]
 
 
 # --- TEAM 3 — ANSWER --------------------------------------------------------

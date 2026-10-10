@@ -84,14 +84,14 @@ do not support is the hard part of judging, and the judge runs only during
 March's scorecards are only comparable if the same judge graded both — changing
 the judge changes the ruler, not the system."""
 
-EMBEDDING_MODEL = os.environ.get(
-    "NEST_EMBEDDING_MODEL", "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
-)
-"""TEAM 2 — this is your decision, and it is a real one.
+EMBEDDING_MODEL = os.environ.get("NEST_EMBEDDING_MODEL", "intfloat/multilingual-e5-small")
+"""TEAM 2's choice: multilingual, trained on short question → answering passage.
 
-The default here is multilingual and small enough to run on a laptop. It is a
-starting point, not a recommendation. Measure it against alternatives with
-`make eval` and write down what you found.
+Measured against the starting model (paraphrase-multilingual-MiniLM-L12-v2) and
+an English-first one (all-MiniLM-L6-v2): the right chunk ranked first went from
+53% to 65% on the real documents and from 53% to 93% on the fixtures, while the
+English-first model managed 29% and 40%. Numbers and method in docs/INDEX.md.
+E5 models need ``"query: "`` / ``"passage: "`` prefixes — ``index`` adds them.
 """
 
 

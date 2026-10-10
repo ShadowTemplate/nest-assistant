@@ -36,7 +36,9 @@ def main() -> int:
     corpus = index.load_corpus()
     vectors, _ = index.build_index(corpus)
     questions = evaluate.load_questions()
-    qvecs = index._embed([q["question"] for q in questions]) if questions else np.zeros((0, 1))
+    qvecs = (
+        index._embed([q["question"] for q in questions], "query") if questions else np.zeros((0, 1))
+    )
 
     # PCA: the two directions along which the chunks differ most.
     mean = vectors.mean(axis=0)

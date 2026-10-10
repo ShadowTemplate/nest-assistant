@@ -138,6 +138,7 @@ tools/       the data scanner that stops all of the above going wrong
 | [`docs/CONTRIBUTING.md`](docs/CONTRIBUTING.md) | How we branch, commit and review |
 | [`docs/DATA_POLICY.md`](docs/DATA_POLICY.md) | What may never enter this repository |
 | [`docs/IDENTITY.md`](docs/IDENTITY.md) | Team 4's design note on verifying residents |
+| [`docs/INDEX.md`](docs/INDEX.md) | Team 2's note: the embedding model we chose, and how tier filtering works |
 | [`eval/README.md`](eval/README.md) | What we measure, and what our numbers do not tell you |
 
 ## Where the data lives

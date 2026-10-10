@@ -12,21 +12,15 @@ W1-2.1  Embeddings and vector index  -> real search, and a written note on which
 W1-2.2  Tier-filtered retrieval      -> the most important task on this team
 W1-2.3  Hybrid search (BM25)         -> droppable
 
-A warning you should read before you write anything
----------------------------------------------------
-The stub below **does not filter by tier**. Ask it a question as ``public`` and
-it will hand you a ``staff`` chunk. That is deliberate, it is today's most
-dangerous bug, and it is task W1-2.2. ``make eval`` will report it as a tier leak
-on the board until you fix it.
+How it works
+------------
+One vector index over the whole corpus, saved under ``build/index/``. A search
+first drops every chunk the caller may not see, then ranks only what is left by
+cosine similarity to the question. A forbidden chunk is never scored, so no
+ranking bug can return it. The design and its trade-offs are in docs/INDEX.md.
 
-There is a second filter downstream in ``pipeline.py`` that stops the leak
-reaching a real user. Do not treat that as your safety net: defence in depth
-means two independent layers that both work, not one layer and one excuse.
-
-Stuck for 15 minutes?
----------------------
-``tests/test_components.py`` has a skipped test named
-``test_public_never_sees_private``. Unskip it. It is your definition of done.
+There is a second filter downstream in ``pipeline.py``. It is not our safety
+net: defence in depth means two independent layers that both work.
 """
 
 from __future__ import annotations
@@ -35,11 +29,11 @@ import hashlib
 import json
 import os
 from datetime import UTC, datetime
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Literal
 
 from ..config import CHUNKS_PATH, DEFAULT_K, EMBEDDING_MODEL, INDEX_DIR, embedding_model_cached
 from ..ingest import build_chunks
-from ..schema import Chunk, Tier, tier_allows
+from ..schema import Chunk, Tier, tier_allows, tier_rank
 from ..storage import read_chunks
 
 if TYPE_CHECKING:
@@ -47,7 +41,7 @@ if TYPE_CHECKING:
 
 OWNER = "TEAM 2 — INDEX"
 INTERFACE = "index.search(q: str, tier: Tier, k: int) -> list[Chunk]"
-STATUS = "stub"  # flip to "real" when you replace the body below. `make board` reads this.
+STATUS = "real"  # `make board` reads this.
 
 
 def load_corpus() -> list[Chunk]:
@@ -86,7 +80,18 @@ def _fingerprint(chunks: list[Chunk], model: str) -> str:
     return h.hexdigest()
 
 
-def _embed(texts: list[str]) -> np.ndarray:
+def _prefixes(model: str) -> dict[str, str]:
+    """What the model expects before a question and before a passage.
+
+    E5 models were trained on ``"query: …"`` against ``"passage: …"`` and rank
+    measurably worse without them. Other models take the text as it is.
+    """
+    if "e5" in model.lower():
+        return {"query": "query: ", "passage": "passage: "}
+    return {"query": "", "passage": ""}
+
+
+def _embed(texts: list[str], kind: Literal["query", "passage"] = "query") -> np.ndarray:
     """Turn texts into unit-length vectors, so closeness is a single dot product."""
     global _model
     if _model is None:
@@ -99,7 +104,10 @@ def _embed(texts: list[str]) -> np.ndarray:
         if not embedding_model_cached():
             raise RuntimeError(f"{EMBEDDING_MODEL} is not downloaded — run `make warm`")
         _model = SentenceTransformer(EMBEDDING_MODEL, local_files_only=True)
-    vectors = _model.encode(texts, normalize_embeddings=True, show_progress_bar=False)
+    prefix = _prefixes(EMBEDDING_MODEL)[kind]
+    vectors = _model.encode(
+        [prefix + text for text in texts], normalize_embeddings=True, show_progress_bar=False
+    )
     return vectors.astype("float32")
 
 
@@ -126,7 +134,7 @@ def build_index(
             _cache[fingerprint] = (np.load(EMBEDDINGS_PATH), meta["chunk_ids"])
             return _cache[fingerprint]
 
-    vectors = _embed([chunk.text for chunk in chunks])
+    vectors = _embed([chunk.text for chunk in chunks], "passage")
     ids = [chunk.id for chunk in chunks]
     meta = {
         "fingerprint": fingerprint,
@@ -197,16 +205,17 @@ def search_with_scores(
     identical meaning, around 0.2 is "unrelated". On the fixtures a right answer
     usually scores 0.35–0.65; below ~0.3 treat the top result as a guess.
     """
+    tier_rank(tier)  # an unknown caller tier is a bug upstream: fail loudly, show nothing
     # Tier filter first, before any ranking: a chunk the caller may not see is
     # never scored, so it can never be returned — whatever the ranking does.
     corpus = load_corpus()
-    allowed = [i for i, chunk in enumerate(corpus) if tier_allows(tier, chunk.tier)]
+    allowed = [i for i, chunk in enumerate(corpus) if _visible(chunk, tier)]
     if not allowed or k <= 0:
         return []
 
     try:
         vectors, _ = build_index(corpus)
-        query = _embed([q])[0]
+        query = _embed([q], "query")[0]
     except (ImportError, RuntimeError):
         # `make setup-lite` or CI: no embedding model. Stay safe and runnable —
         # tier-filtered, in document order — rather than break the pipeline.
@@ -216,7 +225,22 @@ def search_with_scores(
     # Stable sort on the negated score: ties keep document order, so the same
     # query over the same corpus always ranks the same way.
     order = (-scores).argsort(kind="stable")[:k]
-    return [(corpus[allowed[i]], float(scores[i])) for i in order]
+    results = [(corpus[allowed[i]], float(scores[i])) for i in order]
+
+    # Belt and braces, still inside INDEX: if a future change to the ranking ever
+    # mixes up positions, fail closed (the pipeline turns this into a refusal)
+    # rather than hand anyone a chunk above their tier.
+    if any(not _visible(chunk, tier) for chunk, _ in results):
+        raise RuntimeError("index returned a chunk above the caller's tier")
+    return results
+
+
+def _visible(chunk: Chunk, tier: Tier) -> bool:
+    """May a caller at ``tier`` see ``chunk``? A chunk with a broken tier label is hidden."""
+    try:
+        return tier_allows(tier, chunk.tier)
+    except ValueError:
+        return False
 
 
 __all__ = [
