@@ -74,7 +74,7 @@ def format_footer(confidence: float, chunks: list[Chunk]) -> str:
     tier of asker that could have been given this answer.
     """
     tier = max((c.tier for c in chunks), key=tier_rank, default=TIERS[0])
-    return f"_Affidabilità: {confidence:.0%} · Livello: {TIER_LABEL_IT.get(tier, tier)}_"
+    return f"__Affidabilità: {confidence:.0%} · Livello: {TIER_LABEL_IT.get(tier, tier)}__"
 
 
 def load_system_prompt(lang: str = DEFAULT_LANG) -> str:

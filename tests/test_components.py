@@ -312,5 +312,5 @@ def test_answer_footer_shows_confidence_and_privilege(monkeypatch: pytest.Monkey
     )
     result = answer_mod.generate("domanda", chunks, "it")
     assert result.confidence == 0.95
-    assert result.text.endswith("Affidabilità: 95% · Livello: residente_")
+    assert result.text.endswith("Affidabilità: 95% · Livello: residente__")
     assert "[a#1]" not in result.text
