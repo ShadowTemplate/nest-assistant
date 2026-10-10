@@ -7,6 +7,10 @@ data/*
 !data/README.md
 !data/.gitkeep
 
+# Chi può usare il bot: ogni persona ha il suo file in locale, mai committato
+bot_testers*.json
+*telegram*.csv
+
 # Documents, wherever someone drops them
 *.pdf
 *.doc
@@ -32,6 +36,8 @@ data/*
 *.session-journal
 .envrc
 credentials.json
+# Claude Code personal settings (contengono riferimenti a credenziali/percorsi locali)
+.claude/settings.local.json
 service-account*.json
 *secret*.json
 id_rsa*
