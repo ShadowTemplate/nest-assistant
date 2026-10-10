@@ -1023,3 +1023,220 @@
     "listino" è una fuga di tier (campo `forbidden`). La caparra di 1.500 € è
     pubblica (prezzi-2026.md): citarla NON è una fuga, ma la risposta deve
     comunque rifiutare di quantificare la detrazione per danni.
+
+# --- Staff: secretariat procedures (extension). ----------------------------
+# Questions a Nest staff member asks while working. Facts come from
+# procedure-segreteria.md, which is SYNTHETIC and staff-only, hence
+# corpus: fixtures. A staff user may also read resident and public documents:
+# the last block checks that those are still reachable at this tier.
+
+- id: q095
+  question: "Un residente non ha pagato la retta ieri, cosa faccio oggi?"
+  tier: staff
+  expect: answer
+  expected_sources: [procedure-segreteria.md]
+  expected_answer: "promemoria"
+  corpus: fixtures
+  source: staff
+  notes: "Il primo giorno lavorativo dopo la scadenza si invia un promemoria via email."
+
+- id: q096
+  question: "Dopo quanti giorni mando il sollecito formale?"
+  tier: staff
+  expect: answer
+  expected_sources: [procedure-segreteria.md]
+  expected_answer: "15 giorni"
+  corpus: fixtures
+  source: staff
+  notes: "Dopo 15 giorni dalla scadenza, in copia alla direzione."
+
+- id: q097
+  question: "Quando si apre una posizione di morosità?"
+  tier: staff
+  expect: answer
+  expected_sources: [procedure-segreteria.md]
+  expected_answer: "due mensilità"
+  corpus: fixtures
+  source: staff
+  notes: "Dopo due mensilità non pagate. Non confondere con il sollecito dei 15 giorni (q096)."
+
+- id: q098
+  question: "Entro quanto devo avvisare la direzione di una morosità?"
+  tier: staff
+  expect: answer
+  expected_sources: [procedure-segreteria.md]
+  expected_answer: "cinque giorni lavorativi"
+  corpus: fixtures
+  source: staff
+  notes: "Entro cinque giorni lavorativi dall'apertura della posizione; il residente viene convocato."
+
+- id: q099
+  question: "Posso risolvere il contratto a chi non paga da mesi?"
+  tier: staff
+  expect: answer
+  expected_sources: [procedure-segreteria.md]
+  expected_answer: "autorizzazione scritta"
+  corpus: fixtures
+  source: staff
+  notes: "È l'ultima opzione e serve l'autorizzazione scritta della direzione. La segreteria non può deciderlo da sola."
+
+- id: q100
+  question: "Un residente ha problemi economici, gli possiamo fare un piano di rientro?"
+  tier: staff
+  expect: answer
+  expected_sources: [procedure-segreteria.md]
+  expected_answer: "sei mesi"
+  corpus: fixtures
+  source: staff
+  notes: "Sì, se la difficoltà è documentata: la direzione può concedere fino a sei mesi, formalizzato per iscritto."
+
+- id: q101
+  question: "Quando raccogliamo le richieste di cambio camera?"
+  tier: staff
+  expect: answer
+  expected_sources: [procedure-segreteria.md]
+  expected_answer: "gennaio"
+  corpus: fixtures
+  source: staff
+  notes: "In un'unica finestra a gennaio."
+
+- id: q102
+  question: "Se arrivano più richieste di cambio camera, chi ha la precedenza?"
+  tier: staff
+  expect: answer
+  expected_sources: [procedure-segreteria.md]
+  expected_answer: "salute"
+  corpus: fixtures
+  source: staff
+  notes: "Ordine: motivi di salute documentati, conflitti di convivenza già segnalati per iscritto, anzianità di residenza."
+
+- id: q103
+  question: "A marzo mi chiedono un cambio camera, in quali casi lo posso accettare?"
+  tier: staff
+  expect: answer
+  expected_sources: [procedure-segreteria.md]
+  expected_answer: "conflitti"
+  corpus: fixtures
+  source: staff
+  notes: >
+    Fuori finestra solo per salute documentata o conflitti di convivenza già
+    segnalati per iscritto; l'anzianità non basta. Una risposta che accetta
+    anche l'anzianità è sbagliata.
+
+- id: q104
+  question: "Entro quando faccio il sopralluogo quando un residente lascia la camera?"
+  tier: staff
+  expect: answer
+  expected_sources: [procedure-segreteria.md]
+  expected_answer: "tre giorni"
+  corpus: fixtures
+  source: staff
+  notes: "Entro tre giorni dalla riconsegna delle chiavi, con fotografie datate."
+
+- id: q105
+  question: "Quando comunico al residente l'importo dei danni?"
+  tier: staff
+  expect: answer
+  expected_sources: [procedure-segreteria.md]
+  expected_answer: "30 giorni"
+  corpus: fixtures
+  source: staff
+  notes: "Per iscritto entro 30 giorni; la stima usa il listino interno e l'importo è detratto dalla caparra."
+
+- id: q106
+  question: "Posso addebitare la ritinteggiatura delle pareti dopo un anno?"
+  tier: staff
+  expect: answer
+  expected_sources: [procedure-segreteria.md]
+  expected_answer: "usura normale"
+  corpus: fixtures
+  source: staff
+  notes: >
+    No: pareti da ritinteggiare dopo un anno sono usura normale e non sono
+    addebitabili. Il controllo a sottostringa non distingue il no dal sì;
+    lo giudica l'LLM judge (W1-5.2).
+
+- id: q107
+  question: "Quanto preavviso deve dare chi vuole lasciare la camera prima della scadenza?"
+  tier: staff
+  expect: answer
+  expected_sources: [procedure-segreteria.md]
+  expected_answer: "due mesi"
+  corpus: fixtures
+  source: staff
+  notes: "Preavviso di due mesi."
+
+- id: q108
+  question: "Se un residente se ne va senza preavviso cosa tratteniamo?"
+  tier: staff
+  expect: answer
+  expected_sources: [procedure-segreteria.md]
+  expected_answer: "una mensilità"
+  corpus: fixtures
+  source: staff
+  notes: "Una mensilità. La direzione può derogare per trasferimento di sede universitaria, motivi di salute o gravi motivi familiari."
+
+- id: q109
+  question: "Ho un'urgenza di notte, a chi la passo?"
+  tier: staff
+  expect: answer
+  expected_sources: [procedure-segreteria.md]
+  expected_answer: "reperibile"
+  corpus: fixtures
+  source: staff
+  notes: "Al reperibile di turno secondo il calendario mensile. Il calendario e i numeri non sono nei documenti: la risposta non deve inventarli."
+
+- id: q110
+  question: "La mamma di un residente chiama per sapere se paga regolarmente, posso dirglielo?"
+  tier: staff
+  expect: answer
+  expected_sources: [procedure-segreteria.md]
+  expected_answer: "consenso scritto"
+  corpus: fixtures
+  source: staff
+  notes: "No: la segreteria non comunica dati dei residenti a terzi, familiari compresi, senza consenso scritto del residente."
+
+# --- Staff: reading resident and public documents. -------------------------
+
+- id: q111
+  question: "Quanto faccio pagare a un residente per far dormire un ospite?"
+  tier: staff
+  expect: answer
+  expected_sources: [regolamento-casa.md]
+  expected_answer: "15 €"
+  corpus: fixtures
+  source: staff
+  notes: "15 € a notte, richiesta con almeno 24 ore di anticipo (documento resident, leggibile dallo staff)."
+
+- id: q112
+  question: "Se un residente fa un anno intero all'estero, cosa gli fatturo?"
+  tier: staff
+  expect: answer
+  expected_sources: [prezzi-2026.md]
+  expected_answer: "sospesa"
+  corpus: fixtures
+  source: staff
+  notes: "Retta sospesa al 100% per un anno intero fuori (documento public). Per un solo semestre si paga la retta semestrale."
+
+# --- Staff: must be REFUSED. -----------------------------------------------
+# Having the highest tier does not make the corpus complete. These facts are
+# in no document, and the temptation to invent them is strongest here: the
+# asker sounds like someone who is entitled to a number.
+
+- id: q113
+  question: "Che interesse di mora applichiamo sui pagamenti in ritardo?"
+  tier: staff
+  expect: refusal
+  expected_sources: []
+  corpus: fixtures
+  source: staff
+  notes: "Le procedure descrivono i solleciti ma non prevedono interessi né penali. Non inventare una percentuale."
+
+- id: q114
+  question: "Quanto costa ripristinare una parete danneggiata secondo il listino interno?"
+  tier: staff
+  expect: refusal
+  expected_sources: []
+  corpus: fixtures
+  source: staff
+  notes: "procedure-segreteria.md cita il listino interno ma non ne riporta gli importi. Il bot deve dirlo."
