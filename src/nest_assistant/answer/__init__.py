@@ -43,19 +43,37 @@ REFUSAL_MARKER = "NON_TROVATO"
 
 _CITATION_RE = re.compile(r"\s*\[([^\[\]]+#[^\[\]]+)\]")
 
-_HEDGE_RE = re.compile(
-    # Italian: "non specificano", "non è stato possibile trovare", "non sono presenti".
-    # "non solo X ma anche Y" is not a hedge, hence the lookahead.
-    r"\bnon\s+(?!solo\b)(?:\w+\s+){0,3}?"
-    r"(?:dicono|dice|specific\w+|risult\w+|indic\w+|precis\w+|menzion\w+|riport\w+"
-    r"|present\w+|disponibil\w+|trov\w+|possibile)"
-    # English, for lang="en": "the documents do not specify".
-    r"|\b(?:do(?:es)?\s+not|don't|doesn't|not)\s+(?:\w+\s+){0,2}?"
-    r"(?:specify|state|mention|say|provide|indicate|contain|include)",
+_GAP_NEGATION_RE = re.compile(
+    r"\b(?:non|nessun\w*|parzial\w*|not|no|only\s+partial)\b|n't\b", re.IGNORECASE
+)
+_GAP_SUBJECT_RE = re.compile(
+    r"\b(?:document[oi]|documents?|fonti?|contesto|informazion\w*|dettagl\w*|indicat\w*|specificat\w*"
+    r"|menzionat\w*|riportat\w*|descritt\w*|trovat[oaie]|trovare"
+    r"|sources?|context|information|details?|specif\w*|mention\w*|stated?)\b",
     re.IGNORECASE,
 )
-"""The model admits a gap inside an otherwise answered question. A heuristic over
-a handful of phrasings, not a language model: it will miss some."""
+_SENTENCE_RE = re.compile(r"[^.!?\n]+")
+
+
+def admits_gap(text: str) -> bool:
+    """True if a sentence of ``text`` says the documents do not hold what was asked.
+
+    "I documenti non specificano il costo", "non è indicato alcun prezzo",
+    "dai documenti emerge solo una descrizione parziale": the model knows the
+    answer is not there and answered anyway. A negation alone is not enough —
+    "non sono disponibili camere triple" is a complete answer — so the same
+    sentence must also be *about the information*: documents, details, what is
+    indicated or mentioned. Italian and English behave the same way.
+
+    A heuristic over phrasings, not understanding: it misses a gap the model
+    words differently, and it would flag "non è indicato per soggiorni brevi".
+    Both cases are in the tests.
+    """
+    return any(
+        _GAP_NEGATION_RE.search(sentence) and _GAP_SUBJECT_RE.search(sentence)
+        for sentence in _SENTENCE_RE.findall(text)
+    )
+
 
 REFUSAL_IT = (
     "Non ho trovato questa informazione nei documenti di Nest. "
@@ -65,29 +83,25 @@ REFUSAL_IT = (
 sentence that decides whether "I don't know" sounds trustworthy or broken."""
 
 
-def estimate_confidence(text: str, cited: list[str], invented: int) -> float:
-    """How far to trust a non-refused answer, 0..1. A heuristic, not a probability.
+CONFIDENCE_ONE_DOCUMENT = 0.6
+CONFIDENCE_CORROBORATED = 0.8
+"""``Answer.confidence`` has exactly three values, and they are levels, not
+probabilities: 0.0 refused; 0.6 answered from one document; 0.8 answered from
+two or more documents that the model cited together. Nothing here was
+calibrated against outcomes, so do not threshold on "0.7" anywhere downstream:
+the refusal decision is already made by :func:`generate`, and ``refused`` is the
+field to read."""
 
-    Retrieval scores cannot do this job: with the e5 model every question scores
-    0.76-0.89, answerable or not. What we can see instead: how many distinct
-    *documents* back the answer, whether the model cited ids it was never given,
-    and whether it admits a gap in its own text.
 
-    The score is ``0.6``, plus ``0.1`` for a second document, minus ``0.2`` for an
-    invented id and ``0.2`` for an admitted gap: it lives in 0.2-0.7, so it is
-    never 1.0 (nothing here is proof) and no clamp is needed. A refusal is 0.0.
+def estimate_confidence(cited: list[str]) -> float:
+    """Confidence level of an answer that passed every refusal check.
 
-    An answer that admits a gap is lowered, not refused: "the price is X; the
-    documents do not say more about meals" is useful to a parent. Whether a
-    partial answer should be a refusal is a product decision, not a scoring one.
+    Counts distinct *documents*, not chunk ids: two chunks of the same PDF are
+    one witness. Retrieval scores are not used: with the e5 model every question
+    scores 0.76-0.89, answerable or not.
     """
     documents = {cid.rsplit("#", 1)[0] for cid in cited}
-    score = 0.6 + (0.1 if len(documents) >= 2 else 0.0)
-    if invented:
-        score -= 0.2
-    if _HEDGE_RE.search(text):
-        score -= 0.2
-    return round(score, 2)
+    return CONFIDENCE_CORROBORATED if len(documents) >= 2 else CONFIDENCE_ONE_DOCUMENT
 
 
 def load_system_prompt(lang: str = DEFAULT_LANG) -> str:
@@ -134,7 +148,12 @@ def generate(q: str, chunks: list[Chunk], lang: str = DEFAULT_LANG) -> Answer:
     :func:`load_system_prompt` to get your prompt. Both exist so that October's
     hosted model and October-2027's self-hosted one look identical from here.
 
-    W1-3.1: grounded generation. Refusal thresholds are W1-3.2.
+    Refusal is decided here, by rules, in this order: no chunks; model
+    unreachable; the model wrote ``NON_TROVATO``; no valid citation (it spoke
+    from memory); an invented citation (it made at least part of it up); the
+    text admits the documents do not hold the answer (:func:`admits_gap`). A
+    partial answer is a refusal: "costa X, ma i documenti non dicono quando si
+    paga" invites the parent to fill the gap with a guess.
     """
     refusal = Answer(text=REFUSAL_IT, citations=[], confidence=0.0, refused=True)
     if not chunks:
@@ -155,16 +174,13 @@ def generate(q: str, chunks: list[Chunk], lang: str = DEFAULT_LANG) -> Answer:
     text = _CITATION_RE.sub("", raw)
     text = re.sub(r"[ \t]+([.,;:!?])", r"\1", re.sub(r"[ \t]{2,}", " ", text)).strip()
 
-    # No valid citation means the model spoke from memory: treat it as a refusal.
-    if not cited or not text:
+    # No valid citation: it spoke from memory. An invented one: it made part of it up.
+    if not cited or not text or len(cited) < len(found):
+        return refusal
+    if admits_gap(text):
         return refusal
 
-    return Answer(
-        text=text,
-        citations=cited,
-        confidence=estimate_confidence(text, cited, len(found) - len(cited)),
-        refused=False,
-    )
+    return Answer(text=text, citations=cited, confidence=estimate_confidence(cited), refused=False)
 
 
 __all__ = [
@@ -172,6 +188,7 @@ __all__ = [
     "load_system_prompt",
     "format_context",
     "estimate_confidence",
+    "admits_gap",
     "REFUSAL_IT",
     "OWNER",
     "INTERFACE",

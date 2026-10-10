@@ -1,23 +1,113 @@
-# TEAM 3 — near-miss questions for W1-3.2.
+# TEAM 3 — near-miss questions for W1-3.2. Run them with:
 #
-# The corpus NAMES each topic below but never gives the detail asked for. A model
-# that answers is inventing it. `expect: refusal` for every trap; `control`
-# entries are answerable and measure over-refusal. Public tier only.
+#     uv run python tools/refusal_traps.py
 #
-# `expect` is set on every entry so the file also loads with evaluate's loader,
-# which defaults a missing `expect` to "answer". Known borderline: t05 and t08 are
-# grounded in the text (a discount "from the second child"; meals "Mon-Fri"), so
-# the model answers instead of refusing and we treat that as defensible.
-- {id: t01, kind: trap, expect: refusal, q: "Quanto costa usare la lavanderia?"}
-- {id: t02, kind: trap, expect: refusal, q: "Che velocità ha il wifi?"}
-- {id: t03, kind: trap, expect: refusal, q: "Il parcheggio è gratuito? Quanto costa?"}
-- {id: t04, kind: trap, expect: refusal, q: "Quanto costa la retta per un solo mese?"}
-- {id: t05, kind: trap, expect: refusal, q: "C'è uno sconto se iscrivo tre figli?"}
-- {id: t06, kind: trap, expect: refusal, q: "Il sostegno al merito si somma allo sconto per fratelli?"}
-- {id: t07, kind: trap, expect: refusal, q: "Posso pagare la retta annuale in due rate?"}
-- {id: t08, kind: trap, expect: refusal, q: "La domenica sono inclusi i pasti?"}
-- {id: t09, kind: trap, expect: refusal, q: "Quanti giorni servono per avere una risposta alla richiesta di ammissione?"}
-- {id: t10, kind: trap, expect: refusal, q: "Cosa succede alla retta se lascio la residenza a metà anno?"}
-- {id: c01, kind: control, expect: answer, q: "A quanto ammonta il sostegno al merito?"}
-- {id: c02, kind: control, expect: answer, q: "Colazione e cena sono comprese nella retta?"}
-- {id: c03, kind: control, expect: answer, q: "Quanto costa la doppia per l'intero anno?"}
+# Same format as eval/questions.yaml, so evaluate.load_questions() and
+# evaluate.run() score them unchanged.
+#
+# Traps: the corpus NAMES the topic but never gives the detail asked for, so a
+# model that answers is inventing it or deducing it. Controls: answerable
+# questions on the same topics, there to catch a fix that just refuses more.
+# All public tier, all only meaningful on the real documents (corpus: data).
+
+- id: t01
+  question: "Quanto costa usare la lavanderia?"
+  tier: public
+  expect: refusal
+  corpus: data
+  notes: "La lavanderia compare nell'elenco dei servizi, senza prezzo."
+
+- id: t02
+  question: "Che velocità ha il wifi?"
+  tier: public
+  expect: refusal
+  corpus: data
+  notes: "Il wifi compare fra i servizi, senza velocità."
+
+- id: t03
+  question: "Il parcheggio è gratuito? Quanto costa?"
+  tier: public
+  expect: refusal
+  corpus: data
+  notes: "Il parcheggio compare fra i servizi, senza prezzo."
+
+- id: t04
+  question: "Quanto costa la retta per un solo mese?"
+  tier: public
+  expect: refusal
+  corpus: data
+  notes: "Esistono solo retta annuale e semestrale. Dividere per 11 è inventare."
+
+- id: t05
+  question: "Il sostegno al merito si somma allo sconto per fratelli?"
+  tier: public
+  expect: refusal
+  corpus: data
+  notes: "Entrambi sono descritti; il cumulo non è mai citato."
+
+- id: t06
+  question: "Posso pagare la retta annuale in due rate?"
+  tier: public
+  expect: refusal
+  corpus: data
+  notes: "Le modalità di pagamento non sono descritte."
+
+- id: t07
+  question: "La domenica sono inclusi i pasti?"
+  tier: public
+  expect: refusal
+  corpus: data
+  notes: >
+    I documenti dicono "colazione e cena dal lunedì al venerdì" e niente sul
+    weekend. "Quindi la domenica no" è una deduzione, che la regola 1 del prompt
+    vieta: va rifiutata.
+
+- id: t08
+  question: "Quanti giorni servono per avere una risposta alla richiesta di ammissione?"
+  tier: public
+  expect: refusal
+  corpus: data
+  notes: "Il processo di ammissione è descritto, i tempi di risposta no."
+
+- id: t09
+  question: "Cosa succede alla retta se lascio la residenza a metà anno?"
+  tier: public
+  expect: refusal
+  corpus: data
+  notes: "Recesso e rimborsi non sono descritti."
+
+- id: c01
+  question: "A quanto ammonta il sostegno al merito?"
+  tier: public
+  expect: answer
+  expected_sources: [Bando_NEST_College_Trento_2026-2027.pdf]
+  expected_answer: "2.250"
+  corpus: data
+
+- id: c02
+  question: "Colazione e cena sono comprese nella retta?"
+  tier: public
+  expect: answer
+  expected_sources: [Bando_NEST_College_Trento_2026-2027.pdf]
+  expected_answer: "lunedì al venerdì"
+  corpus: data
+
+- id: c03
+  question: "Quanto costa la doppia per l'intero anno?"
+  tier: public
+  expect: answer
+  expected_sources: [Bando_NEST_College_Trento_2026-2027.pdf]
+  expected_answer: "8.250"
+  corpus: data
+
+- id: c04
+  question: "C'è uno sconto se iscrivo tre figli?"
+  tier: public
+  expect: answer
+  expected_sources: [Bando_NEST_College_Trento_2026-2027.pdf]
+  expected_answer: "secondo figlio"
+  corpus: data
+  notes: >
+    Nella prima versione era una trappola (t05). Era sbagliata: il bando prevede
+    lo sconto "per le famiglie che iscrivono almeno 2 figli", e tre figli
+    rientrano. Il modello aveva ragione a rispondere; spostata fra i controlli.
