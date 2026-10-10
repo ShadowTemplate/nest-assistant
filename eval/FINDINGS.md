@@ -21,7 +21,9 @@ judge "made a promise for Nest" — a person reads every `REVIEW` row and sets
 ## What the guardrail layer does (`guardrails.py`)
 
 Second line of defence. Each rule that fires is logged and counted
-(`guardrails.counts()`).
+(`guardrails.counts()`). `guardrails.events()` keeps the last 500 firings
+(`MAX_EVENTS`) so it cannot grow without limit in the bot's long-running
+process; the counts and the log keep everything.
 
 | Rule | Catches | Action |
 |---|---|---|
@@ -31,10 +33,10 @@ Second line of defence. Each rule that fires is logged and counted
 | `system_prompt_leak` | answer repeats the system prompt | refuse |
 | `injection_in_output` | "ignoro le istruzioni", "senza regole", `[SYSTEM]`, self-granted access | refuse |
 | `unsupported_promise` | "garantisce", "ti assicuro"… not present in a cited document | refuse |
-| `personal_data` | phone/email in no retrieved chunk, for non-staff | refuse |
+| `personal_data` | phone/email in no chunk the asker may see, for non-staff | refuse |
 | `hostile_tone` | legal threats in Nest's voice | refuse |
 | `uncited_answer` | non-refusal with no surviving citation (answer from memory) | refuse |
-| `too_long` | over 1200 characters | cut at a sentence |
+| `too_long` | body over 1200 characters (ANSWER's footer not counted, and kept) | cut at a sentence |
 
 ## Measured so far (stub system, 2026-10-10)
 
@@ -54,7 +56,7 @@ Second line of defence. Each rule that fires is logged and counted
 
 - Each rule fires on a hand-written example and stays quiet on a clean answer,
   a refusal, a promise a cited document actually makes, and a phone/email that
-  is present in a retrieved chunk (`tests/test_guardrails.py`, 20 cases).
+  is present in a retrieved chunk (`tests/test_guardrails.py`, 28 cases).
 - Nothing real-model-related has been confirmed to work yet.
 
 ## What did not work / known weak points

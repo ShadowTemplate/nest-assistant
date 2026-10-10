@@ -21,10 +21,11 @@ number would hide it.
 
 ## Where the questions came from
 
-`questions.yaml` holds 62 questions. Every one of them is tagged
-`source: document`: they were written from Nest's documents (the PDFs in `data/`
-and the synthetic fixtures), not collected from a Nest staff member and not from
-a poll of real parents. Zero questions are tagged `staff` or `resident`.
+`questions.yaml` holds 94 questions. 62 are tagged `source: document`: they
+were written from Nest's documents (the PDFs in `data/` and the synthetic
+fixtures). 32 are tagged `source: resident` (q063–q094): written by residents
+about daily life in the house, all `tier: resident` and all valid only on
+`fixtures/`. None are tagged `staff`, and none come from a poll of real parents.
 
 > TEAM 5: if some of these were really written from your own experience as
 > residents, or from other teams, change their `source` tag and update this
@@ -35,20 +36,24 @@ Breakdown by tier and expected outcome:
 | Tier | Should answer | Should refuse |
 |---|---|---|
 | public | 41 | 7 |
-| resident | 10 | 2 |
+| resident | 38 | 6 |
 | staff | 2 | 0 |
 
-By corpus: 50 questions valid on both, 8 only on `data/`, 4 only on `fixtures/`.
+By corpus: 50 questions valid on both, 8 only on `data/`, 36 only on
+`fixtures/`. A run on `data/` uses 58 questions, a run on `fixtures/` 86.
 
 ## What that biases
 
 - **Document-derived questions are answerable by construction.** A question
   written by reading a paragraph is one the corpus can answer. Real users ask
-  things no document covers, and the set under-represents them. Only 9 of 62
+  things no document covers, and the set under-represents them. Only 13 of 94
   questions expect a refusal, so `refusal_recall` rests on a small sample.
-- **Public tier dominates (48 of 62).** The `resident` tier has 12 questions and
-  `staff` has 2. A `staff` result is nearly anecdotal, and tier-boundary
-  behaviour is measured on few cases.
+- **The resident voice only reaches `fixtures/`.** All 32 resident-written
+  questions are tagged `corpus: fixtures`, so a scorecard on the real `data/`
+  corpus is still entirely document-derived.
+- **`staff` is nearly absent (2 of 94).** Public has 48 and resident 44. A
+  `staff` result is anecdotal, and tier-boundary behaviour is measured on few
+  cases.
 - **No parent voice.** Nobody outside the documents contributed. Parents ask
   about money, safety and contracts in loose wording, with typos and often in
   other languages; this set mostly reflects how the documents phrase things.
@@ -67,6 +72,17 @@ from `ANSWER_MODEL` in `config.py`). It is given the question, the key fact in
 `expected_answer` and the answer, and says whether the answer states that fact,
 however it is worded. The old substring check failed correct answers worded
 differently.
+
+**What it costs.** The judge is `JUDGE_MODEL`, by default `claude-opus-5-5`,
+the strongest and most expensive model in the stack, on purpose (see
+`config.py`). It makes one call per answerable question that was not refused:
+at most 49 calls for a run on `data/` and 74 on `fixtures/`, every time you run
+`make eval` or `make eval-save`. Each call is small (question, expected fact and
+answer in; at most 5 tokens out), but they add up over a day of iterating. To
+save money while iterating, set `NEST_JUDGE_MODEL` in `.env` to a cheaper model;
+for any scorecard you commit, use the default, because scorecards are only
+comparable if the same judge graded them. With no API key, no judge call is
+made.
 
 - If no model is reachable, the harness falls back to substring matching and
   says so in the scorecard `notes` (`N substring fallback`). A scorecard with

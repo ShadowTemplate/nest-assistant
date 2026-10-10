@@ -15,7 +15,7 @@ from __future__ import annotations
 
 import logging
 import re
-from collections import Counter
+from collections import Counter, deque
 
 from .answer import REFUSAL_IT
 from .config import PROMPTS_DIR
@@ -27,14 +27,24 @@ STATUS = "real"
 log = logging.getLogger("nest.guardrails")
 
 MAX_CHARS = 1200
-"""A chat answer, not a document. Longer output is cut at a sentence boundary."""
+"""A chat answer, not a document. Longer output is cut at a sentence boundary.
+The footer ANSWER appends (confidence and tier) is kept and not counted."""
 
 SHINGLE_WORDS = 6
 """A run of this many consecutive words shared with a protected text counts as
 repeating it."""
 
+MAX_EVENTS = 500
+"""How many firings :func:`events` keeps. The bot is one long-lived process, so
+an unbounded list would grow for as long as it runs. Older events are dropped;
+:func:`counts` still counts every firing, and the log has all of them."""
+
 _FIRED: Counter[str] = Counter()
-_EVENTS: list[dict[str, str]] = []
+_EVENTS: deque[dict[str, str]] = deque(maxlen=MAX_EVENTS)
+
+# The footer answer.format_footer() adds: one line wrapped in double underscores
+# at the very end of the text, after a blank line.
+_FOOTER = re.compile(r"\n\n__[^\n]*__\s*\Z")
 
 
 def counts() -> dict[str, int]:
@@ -43,7 +53,8 @@ def counts() -> dict[str, int]:
 
 
 def events() -> list[dict[str, str]]:
-    """Every firing since the last :func:`reset`: rule, tier and a text excerpt."""
+    """The last :data:`MAX_EVENTS` firings since :func:`reset`: rule, tier and a
+    text excerpt, oldest first."""
     return list(_EVENTS)
 
 
@@ -135,10 +146,18 @@ def _refuse(rule: str, tier: Tier, detail: str) -> Answer:
     return Answer(text=REFUSAL_IT, citations=[], confidence=0.0, refused=True)
 
 
-def _truncate(text: str) -> str:
-    if len(text) <= MAX_CHARS:
-        return text
-    cut = text[:MAX_CHARS]
+def _split_footer(text: str) -> tuple[str, str]:
+    """Split ``text`` into the body and ANSWER's footer (``""`` if there is none)."""
+    match = _FOOTER.search(text)
+    if not match:
+        return text, ""
+    return text[: match.start()], match.group(0)
+
+
+def _truncate(body: str) -> str:
+    if len(body) <= MAX_CHARS:
+        return body
+    cut = body[:MAX_CHARS]
     end = max(cut.rfind(". "), cut.rfind("! "), cut.rfind("? "))
     return (cut[: end + 1] if end > MAX_CHARS // 2 else cut.rstrip()) + " …"
 
@@ -167,7 +186,8 @@ def apply(answer: Answer, chunks: list[Chunk], tier: Tier) -> Answer:
     8. ``hostile_tone`` — legal threats or similar, in Nest's voice.
     9. ``uncited_answer`` — a non-refusal with no surviving citation: the model
        spoke from memory.
-    10. ``too_long`` — cut at a sentence boundary (repaired).
+    10. ``too_long`` — cut at a sentence boundary (repaired). ANSWER's footer
+        is kept after the cut and is not counted towards the limit.
 
     Known limits: the text rules are phrase-based (Italian only), so a reworded
     or translated attack can pass. Hidden-chunk and hidden-citation detection need
@@ -213,7 +233,8 @@ def apply(answer: Answer, chunks: list[Chunk], tier: Tier) -> Answer:
             return _refuse("unsupported_promise", tier, match.group(0))
 
     if tier != "staff":
-        known = " ".join(c.text for c in chunks)
+        # Only what this tier may see makes a phone number or email "known".
+        known = " ".join(c.text for c in visible)
         known_digits = _digits(known)
         for phone in _PHONE.findall(text):
             if _digits(phone) not in known_digits:
@@ -229,9 +250,10 @@ def apply(answer: Answer, chunks: list[Chunk], tier: Tier) -> Answer:
     if not answer.citations:
         return _refuse("uncited_answer", tier, text)
 
-    if len(text) > MAX_CHARS:
-        _fire("too_long", tier, f"{len(text)} chars")
-        answer.text = _truncate(text)
+    body, footer = _split_footer(text)
+    if len(body) > MAX_CHARS:
+        _fire("too_long", tier, f"{len(body)} chars")
+        answer.text = _truncate(body) + footer
 
     return answer
 
@@ -243,6 +265,7 @@ __all__ = [
     "events",
     "reset",
     "MAX_CHARS",
+    "MAX_EVENTS",
     "OWNER",
     "STATUS",
 ]

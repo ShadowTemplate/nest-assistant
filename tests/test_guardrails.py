@@ -5,7 +5,7 @@ from __future__ import annotations
 import pytest
 
 from nest_assistant import guardrails
-from nest_assistant.answer import REFUSAL_IT
+from nest_assistant.answer import REFUSAL_IT, format_footer
 from nest_assistant.schema import Answer, Chunk
 
 # Built at runtime: the repository scanner (rightly) refuses literal phone numbers
@@ -186,3 +186,37 @@ def test_long_output_is_cut_at_a_sentence_boundary():
     assert len(result.text) <= guardrails.MAX_CHARS + 2
     assert not result.refused
     assert guardrails.counts() == {"too_long": 1}
+
+
+def test_a_long_answer_keeps_its_footer_after_the_cut():
+    footer = "\n\n" + format_footer(0.8, [PRICES])
+    long_text = "La singola costa 10.450 euro. " * 100 + footer
+    result = guardrails.apply(answer(long_text), [PRICES], "public")
+    assert result.text.endswith(footer)
+    assert len(result.text) - len(footer) <= guardrails.MAX_CHARS + 2
+    assert guardrails.counts() == {"too_long": 1}
+
+
+def test_the_footer_does_not_count_towards_the_limit():
+    body = "x" * guardrails.MAX_CHARS
+    text = body + "\n\n" + format_footer(0.8, [PRICES])
+    result = guardrails.apply(answer(text), [PRICES], "public")
+    assert result.text == text
+    assert guardrails.counts() == {}
+
+
+def test_events_are_bounded_but_counts_are_not():
+    fired = guardrails.MAX_EVENTS + 10
+    for _ in range(fired):
+        guardrails.apply(answer("10.450 euro.", ["prezzi#1", "fake#99"]), [PRICES], "public")
+    assert len(guardrails.events()) == guardrails.MAX_EVENTS
+    assert guardrails.counts() == {"invented_citation": fired}
+
+
+def test_a_phone_number_only_in_a_hidden_chunk_is_not_known_to_a_public_asker():
+    staff_phone = Chunk(
+        id="s#1", text=f"Cellulare del custode: {PHONE}.", source="s.md", tier="staff", lang="it"
+    )
+    result = guardrails.apply(answer(f"Chiama il {PHONE}."), [PRICES, staff_phone], "public")
+    assert result.refused
+    assert guardrails.counts() == {"personal_data": 1}
